@@ -11,8 +11,7 @@ int main(int argc, char **argv)
     char *encodingStr;
     int encodingLength;
     int encodinIndx = 0;
-    int out = 0;
-    int in = 0;
+    char c;
 
     void encStr(int i)
     {
@@ -39,30 +38,17 @@ int main(int argc, char **argv)
         }
         if (strncmp(argv[i], "-o", 2) == 0)
         {
-            out = 1;
             output = fopen(&argv[i][2], "w");
         }
         if (strncmp(argv[i], "-i", 2) == 0)
         {
-            in = 1;
             input = fopen(&argv[i][2], "r");
             fprintf(stderr, "%s\n", "Can't open this file");
         }
     }
 
-    char c; // to store the current char
     while ((c = fgetc(input)) != EOF)
     {
-        // code taken partially from google
-        int length = 100;                          //initial size
-        char *str = malloc(length * sizeof(char)); //allocate mem for 100 chars
-        int count = 0;                             //to keep track of how many chars have been used
-
-        while (c != '\n')
-        { //keep reading until a newline
-            if (count >= length)
-                str = realloc(str, (length += 10) * sizeof(char)); //add room for 10 more chars
-
             if (debug == 1)
                 printf("%d\t", c);
 
@@ -85,21 +71,15 @@ int main(int argc, char **argv)
             if (encodinIndx == encodingLength)
                 encodinIndx = 0;
 
-            str[count++] = c;
-
             c = getchar();
-        }
+        
 
-        if (out == 0)
-            printf("%s\n", str);
-        else
-            fprintf(output, "%s", str);
+        fprintf(output, "%c", c);
 
         encodinIndx = 0;
-        memset(str, 0, strlen(str));
-        free(str);
     }
 
+    free(str);
     if (input != stdin)
         fclose(input);
     if (output != stdout)
