@@ -50,13 +50,27 @@ char *map(char *array, int array_length, char (*f)(char))
 {
 	char *mapped_array = (char *)(malloc(array_length * sizeof(char)));
 
-	for (size_t i = 0; i < array_length; i++)
+	for (int i = 0; i < array_length; i++)
 	{
 		mapped_array[i] = f(array[i]);
 	}
 
 	return mapped_array;
 }
+
+char quit(char c) /* Gets a char c, and if the char is 'q', ends the program with exit code 0. Otherwise returns c. */
+{
+	if (c == 'q')
+		exit(0);
+	else
+		return c;
+}
+
+struct fun_desc
+{
+	char *name;
+	char (*fun)(char);
+};
 
 int main(int argc, char **argv)
 {
@@ -66,15 +80,35 @@ int main(int argc, char **argv)
 	// free(arr2);
 
 	int base_len = 5;
-	char arr1[base_len];
-	char *arr2 = map(arr1, base_len, my_get);
-	char *arr3 = map(arr2, base_len, encrypt);
-	char *arr4 = map(arr3, base_len, dprt);
-	char *arr5 = map(arr4, base_len, decrypt);
-	char *arr6 = map(arr5, base_len, cprt);
-	free(arr2);
-	free(arr3);
-	free(arr4);
-	free(arr5);
-	free(arr6);
+	char *carray;
+	char array[base_len];
+	carray = array;
+	char userInput[256];
+	int userChoise;
+	struct fun_desc menu[] = {{"Censor", censor}, {"Encrypt", encrypt}, {"Decrypt", decrypt}, {"Print dec", dprt}, {"Print string", cprt}, {"Get string", my_get}, {"Quit", quit}, {NULL, NULL}};
+	int menuLen = sizeof(menu) / sizeof(menu[0]) - 1;
+
+	while (1)
+	{
+		printf("Please choose a function:\n");
+		for (int i = 0; i < menuLen; i++)
+			printf("%d) %s\n", i, menu[i].name);
+
+		printf("Option: ");
+		if (fgets(userInput, 256, stdin) != NULL)
+		{
+			sscanf(userInput, "%d", &userChoise);
+			if (userChoise <= menuLen - 1 && userChoise >= 0)
+			{
+				printf("Within bounds\n");
+				carray = map(carray, base_len, menu[userChoise].fun);
+			}
+			else
+			{
+				printf("Not within bounds\n");
+				exit(0);
+			}
+			printf("DONE.\n\n");
+		}
+	}
 }
