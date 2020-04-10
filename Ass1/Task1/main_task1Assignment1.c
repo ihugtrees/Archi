@@ -1,5 +1,5 @@
 #include <stdio.h>
-#define MAX_LEN 64 /* maximal input string size */
+#define MAX_LEN 10 /* maximal int size */
 
 extern void assFunc(int x, int y);
 
