@@ -9,7 +9,7 @@ int main(int argc, char **argv)
     double darray[3];
     char carray[3];
 
-    int intarray[] = {1, 2, 3};
+    int intarray[] = {1, 3, 5};
     char charray[] = {'a', 'b', 'c'};
     int *intarrayPtr = &intarray[0];
     char *charrayPtr = &charray[0];
@@ -34,8 +34,8 @@ int main(int argc, char **argv)
            "charray[1]: %c\n"
            "charray[2]: %c\n"
            "p: %p\n",
-           *intarrayPtr, *intarrayPtr + 1, *intarrayPtr + 2,
-           *charrayPtr, *charrayPtr + 1, *charrayPtr + 2, &p);
+           *(intarrayPtr + 0), *(intarrayPtr + 1), *(intarrayPtr + 2),
+           charrayPtr[0], charrayPtr[1], charrayPtr[2], &p);
 
     return 0;
 }
