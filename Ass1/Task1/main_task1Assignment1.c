@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     fgets(str_int, MAX_LEN, stdin);
     sscanf(str_int, "%d", &y);
-    assFunc(x, y); 
+    assFunc(x, y);
 
     return 0;
 }
