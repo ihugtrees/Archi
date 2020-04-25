@@ -10,14 +10,15 @@ section .text
 
 convertor:
 	push ebp
-	mov ebp, esp	
+	mov ebp, esp
 	pushad			
 
 	mov ecx, dword [ebp+8]	; get function argument (pointer to string)
 
 	; your code comes here...
+    
 
-	push an			; call printf with 2 arguments -  
+	push an  			; call printf with 2 arguments -  
 	push format_string	; pointer to str and pointer to format string
 	call printf
 	add esp, 8		; clean up stack after call
