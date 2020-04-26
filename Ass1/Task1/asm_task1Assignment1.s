@@ -1,39 +1,35 @@
+section	.rodata			; we define (global) read-only variables in .rodata section
+	format_string: db "%d",10,0	; format string
+section .text
+	global assFunc
+	extern printf
+	extern c_checkValidity
 
-section .rodata
-	format_string: db "%d",10,0 	; format string
-
-section .text                    	; we write code in .text section
-        global assFunc          	; 'global' directive causes the function assFunc(...) to appear in global scope
-		extern c_checkValidity
-		extern printf
-
-assFunc:                        	; assFunc function definition - functions are defined as labels
-        push ebp              		; save Base Pointer (bp) original value
-        mov ebp, esp         		; use Base Pointer to access stack contents (do_Str(...) activation frame)
-        pushad                   	; push all signficant registers onto stack (backup registers values)
-        
-		mov ecx, dword [ebp+8]		; x argument
-		mov edx, dword [ebp+12]		; y argument
-
-		push edx					; c_checkValidity second argument
-		push ecx					; c_checkValidity first argument
-		xor eax, eax				; zero eax
+		assFunc:
+		push ebp
+		mov ebp, esp	
+		pushad	
+		mov ecx, [ebp+8]   ;  get x-first argument
+		mov edx, [ebp+12]  ;  get y-second argument
+		push edx
+		push ecx
+		xor eax,eax
 		call c_checkValidity
 		pop ecx
 		pop edx
-		cmp eax,'0'
-		je add_Number
+		cmp eax ,'0'
+		je addXY
 		sub ecx,edx
-		jmp after_Sub
-		add_Number:
+		jmp noAdd
+		addXY:
 		add ecx,edx
-		after_Sub:
-		push ecx
-		push format_string
-		call printf
-		add esp, 8
-	
-        popad                    	; restore all previously used registers
-        mov esp, ebp				; free function activation frame
-        pop ebp						; restore Base Pointer previous value (to returnt to the activation frame of main(...))
-        ret
+		noAdd:
+		push ecx			; call printf with 2 arguments -  
+		push format_string			; pointer to str and pointer to format string
+		toPrint:
+		call printf   
+		add esp, 8		; clean up stack after call
+		popad			
+		mov esp, ebp	
+		pop ebp
+		ret

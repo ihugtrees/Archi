@@ -1,25 +1,23 @@
 #include <stdio.h>
-#include <string.h>
-#define MAX_LEN 34 /* maximal input string size */
-                   /* enough to get 32-bit string + '\n' + null terminator */
-extern int convertor(char *buf);
+#include <memory.h>
 
-int main(int argc, char **argv)
+
+#define	MAX_LEN 34			/* maximal input string size */
+					/* enough to get 32-bit string + '\n' + null terminator */
+extern int convertor(char* str);
+
+int main(int argc, char** argv)
 {
-    char buf[MAX_LEN];
-
-    fgets(buf, MAX_LEN, stdin); /* get user input string */
-    printf("%s\n", buf);
-    
-    while (strcmp(buf, "q") != 0)
-    {
-        convertor(buf); /* call your assembly function */
-        for (size_t i = 0; i < MAX_LEN; i++)
-            buf[i] = '\0';
-
-        fgets(buf, MAX_LEN, stdin);
-        printf("%s\n", buf);
-    }
-
-    return 0;
+ while(1)
+ {	
+  char str[34];
+	fgets(str,34,stdin);
+	int x;
+	sscanf(str,"%d",&x);		/* get user input string */ 
+  if(str[0]=='q')
+  	break;
+  if(str[0]!= 0x0a)
+  convertor(str);			/* call your assembly function */
+}
+  return 0;
 }
