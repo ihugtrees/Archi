@@ -8,15 +8,24 @@
 #define SYS_OPEN 5
 #define SYS_CLOSE 6
 #define SYS_LSEEK 19
+#define SYS_GETDENT 141
+#define BUFFER_SIZE 8192
 
 extern int system_call();
 
-int main(int argc, char **argv)
+typedef struct ent {
+    int inode;
+    int offset;
+    short len;
+    char buf[1];
+} ent;
+
+int
+main(int argc, char **argv)
 {
-    char c;
-    int debug = 0, code, i, j;
-    int output = STDOUT;
-    int input = STDIN;
+    int debug = 0, i, j;
+    char *file_prefix;
+    char *attach_prefix;
 
     for (i = 0; i < argc; i++)
     {
@@ -25,19 +34,19 @@ int main(int argc, char **argv)
             debug = 1;
             for (j = 1; j < argc; j++)
             {
-                system_call(SYS_WRITE, STDOUT, argv[j], strlen(argv[j]));
-                system_call(SYS_WRITE, STDOUT, "\n", 1);
+                system_call(SYS_WRITE, STDERR, argv[j], strlen(argv[j]));
+                system_call(SYS_WRITE, STDERR, "  ", 2);
             }
         }
 
-        if (strncmp(argv[i], "-o", 2) == 0)
+        if (strncmp(argv[i], "-p", 2) == 0)
         {
-            output = system_call(SYS_OPEN, &argv[i][2], 65, 0777);
+            file_prefix = &argv[i][2];
         }
 
-        if (strncmp(argv[i], "-i", 2) == 0)
+        if (strncmp(argv[i], "-a", 2) == 0)
         {
-            input = system_call(SYS_OPEN, &argv[i][2], 0, 0777);
+            attach_prefix = &argv[i][2];
         }
     }
 
@@ -45,7 +54,7 @@ int main(int argc, char **argv)
     {
         while ((code = system_call(SYS_READ, input, &c, 1)) > 0)
         {
-            if(c == 0)
+            if (c == 0)
                 break;
             char *stderr_print;
             if (debug == 1)
