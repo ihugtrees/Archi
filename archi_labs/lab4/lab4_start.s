@@ -1,11 +1,11 @@
-section	.rodata			; we define (global) read-only variables in .rodata section
-	str: db "Hello, Infected File", 10	; format string
-	str_len: equ &-str
+section .data
+	msg db 'Hello, Infected File',0x0a
+	msg_size equ $-msg
 
 section .text
 	global _start
 	global system_call
-    global infector
+	global infector
 	extern main
 
 _start:
@@ -44,53 +44,43 @@ system_call:
 	add     esp, 4          ; Restore caller state
 	pop     ebp             ; Restore caller state
 	ret                     ; Back to caller
-
 infector:
 	push    ebp             ; Save caller state
 	mov     ebp, esp
 	sub     esp, 4          ; Leave space for local var on stack
-	pushad                  ; Save some more caller state
-
-	mov 	eax, 5
-	mov 	ebx, [ebp+8]
-	mov 	ecx, 1024
-	mov 	edx, 0777
-	int 	0x80
-	mov     [ebp-4], eax    ; Save file descriptor in ebp-4
-	
-	mov		ebx, eax
-	mov		eax, 4
-	mov		ecx, code_start
-	mov		edx, code_end - code_start
+	mov 	eax,5
+	mov 	ebx,[ebp+8]
+	mov     ecx, 1026   ; Next argument...
+	mov     edx, 0777  ; Next argument...
 	int 	0x80
 
-	mov 	eax, [ebp-4]
-	mov 	ebx, 6
+	push 	eax
+	mov  	ebx,eax
+	mov	 	eax,4
+	mov 	ecx,code_start
+	mov 	edx,code_end-code_start
 	int 	0x80
-	mov     [ebp-4], eax    ; Save returned value...
-	popad                   ; Restore caller state (registers)
+
+	pop		eax
+	mov 	ebx,eax
+	mov 	eax,6
 	mov     eax, [ebp-4]    ; place returned value where caller can see it
-	add     esp, 4          ; Restore caller state
+	mov     esp, ebp          ; Restore caller state
 	pop     ebp             ; Restore caller state
 	ret                     ; Back to caller
-
-
 code_start:
 	infection:
-	push    ebp             ; Save caller state
-	mov     ebp, esp
-	sub     esp, 4          ; Leave space for local var on stack
-	pushad                  ; Save some more caller state
-
-	mov     eax, 4
-	mov 	ebx, 1
-	mov 	ecx, str
-	mov		edx, str_len
-	int     0x80
-	mov     [ebp-4], eax    ; Save returned value...
-	popad                   ; Restore caller state (registers)
-	mov     eax, [ebp-4]    ; place returned value where caller can see it
-	add     esp, 4          ; Restore caller state
-	pop     ebp             ; Restore caller state
-	ret                     ; Back to caller
+		push    ebp             ; Save caller state
+		mov     ebp, esp
+		 sub     esp, 4          ; Leave space for local var on stack
+		 mov eax,4
+		 mov ebx,1
+		 mov ecx,msg
+		 mov edx,msg_size
+		int 0x80
+		
+		mov     eax, [ebp-4]    ; place returned value where caller can see it
+   		mov     esp, ebp          ; Restore caller state
+		pop     ebp             ; Restore caller state
+		ret                     ; Back to caller
 code_end:
