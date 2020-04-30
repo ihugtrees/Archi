@@ -1,6 +1,6 @@
-section	.rodata			; we define (global) read-only variables in .rodata section
-	str: db "Hello, Infected File", 10	; format string
-	str_len: equ &-str
+section .rodata
+	string: db 'Hello, Infected File',0x0a
+	string_len: equ $-string
 
 section .text
 	global _start
@@ -84,8 +84,8 @@ code_start:
 
 	mov     eax, 4
 	mov 	ebx, 1
-	mov 	ecx, str
-	mov		edx, str_len
+	mov 	ecx, string
+	mov		edx, string_len
 	int     0x80
 	mov     [ebp-4], eax    ; Save returned value...
 	popad                   ; Restore caller state (registers)

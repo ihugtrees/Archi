@@ -108,7 +108,7 @@ int main(int argc, char **argv)
                 system_call(SYS_WRITE, STDOUT, "\n", 1);
             }
 
-            if (p = 1)
+            if (p == 1)
             {
                 char type = buffer[file_pointer + dir->length - 1];
                 system_call(SYS_WRITE, STDERR, "Type: ", strlen("Type: "));
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
                 }
             }
 
-            if (a = 1)
+            if (a == 1)
             {
                 infector(dir->name);
             }

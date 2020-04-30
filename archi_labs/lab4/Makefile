@@ -7,7 +7,7 @@ all: flame
 # Tool invocations
 # Executable "flame" depends on the files flame.o
 flame: task2c.o lab4_start.o util.o 
-	ld -m elf_i386  lab4_start.o main.o util.o -o flame
+	ld -m elf_i386  lab4_start.o task2c.o util.o -o flame
 
 # Depends on the source and header files
 task2c.o: task2c.c
