@@ -10,7 +10,6 @@ section .text
 	extern printf
 
 convertor:
-
 	push ebp
 	mov ebp, esp	
 	pushad			
@@ -72,7 +71,7 @@ print_zero:
 	add eax,48
 	mov [edi],  eax
 toPrint:
-	push an			; call printf with 2 arguments -  
+	push an			; call printf with 2 arguments
 	push format_string	; pointer to str and pointer to format string
 	call printf
 	add esp, 8	; clean up stack after call

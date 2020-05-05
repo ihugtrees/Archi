@@ -9,7 +9,9 @@
 #define SYS_CLOSE 6
 #define SYS_GETDENT 141
 #define BUF_SIZE 8192
+
 extern int system_call();
+
 void debugPrint(int call, int returned)
 {
     system_call(SYS_WRITE, STDERR, itoa(call), strlen(itoa(call)));

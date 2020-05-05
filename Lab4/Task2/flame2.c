@@ -1,4 +1,5 @@
 #include "util.h"
+#include "stdio.h"
 
 #define STDIN 0
 #define STDOUT 1
@@ -12,7 +13,7 @@
 #define BUFFER_SIZE 8192
 
 extern int system_call();
-extern void infector();
+extern void infector(); 
 
 typedef struct dirent
 {
@@ -31,7 +32,7 @@ void print_debug(int call, int value)
     stderr_print = itoa(value);
     system_call(SYS_WRITE, STDERR, " Value: ", strlen(" Value: "));
     system_call(SYS_WRITE, STDERR, stderr_print, strlen(stderr_print));
-    system_call(SYS_WRITE, STDERR, "\n", 1);
+    system_call(SYS_WRITE, STDERR, "\n\n", 2);
 }
 
 int main(int argc, char **argv)
@@ -89,36 +90,62 @@ int main(int argc, char **argv)
 
         if ((cmp_rslt = strncmp(dir->name, prefix, strlen(prefix)) == 0))
         {
-            system_call(SYS_WRITE, STDERR, "Name: ", strlen("Name: "));
-            bytes_wrote = system_call(SYS_WRITE, STDOUT, dir->name, strlen(dir->name));
-            system_call(SYS_WRITE, STDOUT, "\n", 1);
-            if (debug == 1)
-            {
-                print_debug(SYS_WRITE, bytes_wrote);
-            }
+            bytes_wrote = system_call(SYS_WRITE, STDOUT, "Name: ", strlen("Name: "));
+            bytes_wrote += system_call(SYS_WRITE, STDOUT, dir->name, strlen(dir->name));
+            bytes_wrote += system_call(SYS_WRITE, STDOUT, "\n", 1);
 
             if (debug == 1)
             {
+                print_debug(SYS_WRITE, bytes_wrote);
+
                 char *file_length = itoa(dir->length);
-                system_call(SYS_WRITE, STDERR, "Length: ", strlen("Length: "));
-                bytes_wrote = system_call(SYS_WRITE, STDOUT, file_length, strlen(file_length));
-                system_call(SYS_WRITE, STDOUT, "\n", 1);
+                bytes_wrote = system_call(SYS_WRITE, STDERR, "Length: ", strlen("Length: "));
+                bytes_wrote += system_call(SYS_WRITE, STDERR, file_length, strlen(file_length));
+                bytes_wrote += system_call(SYS_WRITE, STDERR, "\n", 1);
 
                 print_debug(SYS_WRITE, bytes_wrote);
-                system_call(SYS_WRITE, STDOUT, "\n", 1);
             }
 
             if (p == 1)
             {
-                char type = buffer[file_pointer + dir->length - 1];
-                system_call(SYS_WRITE, STDERR, "Type: ", strlen("Type: "));
-                bytes_wrote = system_call(SYS_WRITE, STDOUT, type, 1);
-                system_call(SYS_WRITE, STDOUT, "\n", 1);
+                int type = buffer[file_pointer + dir->length - 1];
+                bytes_wrote = system_call(SYS_WRITE, STDOUT, "Type: ", strlen("Type: "));
+                switch (type)
+                {
+                case 0:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "Unknown", strlen("Unknown"));
+                    break;
+                case 1:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "FIFO", strlen("FIFO"));
+                    break;
+                case 2:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "character", strlen("Character"));
+                    break;
+                case 4:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "directory", strlen("directory"));
+                    break;
+                case 6:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "block device", strlen("block device"));
+                    break;
+                case 8:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "regular file", strlen("regular file"));
+                    break;
+                case 10:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "symbolic link", strlen("symbolic link"));
+                    break;
+                case 12:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "UNIX domain socket", strlen("UNIX domain socket"));
+                    break;
+                case 14:
+                    bytes_wrote += system_call(SYS_WRITE, STDOUT, "whiteout inode", strlen("whiteout inode"));
+                    break;
+                }
+
+                bytes_wrote += system_call(SYS_WRITE, STDOUT, "\n", 1);
 
                 if (debug == 1)
                 {
                     print_debug(SYS_WRITE, bytes_wrote);
-                    system_call(SYS_WRITE, STDOUT, "\n", 1);
                 }
             }
 
