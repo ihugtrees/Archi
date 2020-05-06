@@ -157,5 +157,7 @@ int main(int argc, char **argv)
         file_pointer += dir->length;
     }
 
+    system_call(6, directory);
+
     return 0;
 }
