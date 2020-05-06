@@ -13,7 +13,7 @@
 #define BUFFER_SIZE 8192
 
 extern int system_call();
-extern void infector(); 
+extern void infector();
 
 typedef struct dirent
 {
@@ -32,7 +32,7 @@ void print_debug(int call, int value)
     stderr_print = itoa(value);
     system_call(SYS_WRITE, STDERR, " Value: ", strlen(" Value: "));
     system_call(SYS_WRITE, STDERR, stderr_print, strlen(stderr_print));
-    system_call(SYS_WRITE, STDERR, "\n\n", 2);
+    system_call(SYS_WRITE, STDERR, "\n", 1);
 }
 
 int main(int argc, char **argv)
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
             for (j = 1; j < argc; j++)
             {
                 system_call(SYS_WRITE, STDERR, argv[j], strlen(argv[j]));
-                system_call(SYS_WRITE, STDERR, "  ", 2);
+                system_call(SYS_WRITE, STDERR, " ", 1);
             }
             system_call(SYS_WRITE, STDERR, "\n", 1);
         }
@@ -147,6 +147,7 @@ int main(int argc, char **argv)
                 {
                     print_debug(SYS_WRITE, bytes_wrote);
                 }
+                bytes_wrote += system_call(SYS_WRITE, STDOUT, "\n", 1);
             }
 
             if (a == 1)
