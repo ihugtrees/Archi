@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>		
+#include <stdlib.h>
+
 extern int assFunc(int x,int y);
 
 int main()
@@ -19,6 +20,7 @@ int main()
 
     return 0;
 }
+
 char c_checkValidity(int x,int y)
 {
 	if(x<y)
