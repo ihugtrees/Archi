@@ -6,15 +6,15 @@
 void sighandler(int signum)
 {
     printf("Looper handling %s\n", strsignal(signum));
+    signal(signum, SIG_DFL);
     raise(signum);
 }
 
 int main(int argc, char **argv)
 {
-
     printf("Starting the program\n");
-    signal(SIGCONT, sighandler);
     signal(SIGINT, sighandler);
+    signal(SIGCONT, sighandler);
     signal(SIGTSTP, sighandler);
 
     while (1)

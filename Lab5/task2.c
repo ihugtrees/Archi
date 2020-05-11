@@ -60,22 +60,22 @@ void printProcessList(process **process_list)
 	updateProcessList(process_list);
 	process *curr = *process_list, *prev = NULL;
 	int idx = 0;
-	printf("Index\tPID\tSTATUS\t\tCOMMAND\n");
+	printf("Index \t PID \t STATUS \t COMMAND \n");
 	while (curr != NULL)
 	{
-		printf("%d\t%d\t", idx, curr->pid);
+		printf("%d \t %d \t", idx, curr->pid);
 		switch (curr->status)
 		{
 		case RUNNING:
-			printf("RUNNING\t");
+			printf("RUNNING \t");
 			break;
 
 		case SUSPENDED:
-			printf("SUSPENDED\t");
+			printf("SUSPENDED \t");
 			break;
 
 		case TERMINATED:
-			printf("TERMINATED\t");
+			printf("TERMINATED \t");
 			break;
 		}
 
@@ -176,7 +176,7 @@ void execute(cmdLine *pCmdLine)
 
 		if (kill(pid, SIGTSTP) < 0)
 		{
-			perror("*** Error - kill - wake failed, errno: ");
+			perror("*** Error - kill - suspend failed, errno: ");
 			fprintf(stderr, "%d\n", errno);
 			freeCmdLines(pCmdLine);
 			exit(errno);
@@ -194,7 +194,7 @@ void execute(cmdLine *pCmdLine)
 
 		if (kill(pid, SIGINT) < 0)
 		{
-			perror("*** Error - kill - wake failed, errno: ");
+			perror("*** Error - kill - kill failed, errno: ");
 			fprintf(stderr, "%d\n", errno);
 			freeCmdLines(pCmdLine);
 			exit(errno);
