@@ -19,7 +19,8 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        sleep(2);
+        printf("loop\n");
+        sleep(4);
     }
 
     return 0;

@@ -1,7 +1,7 @@
-all: looper 
+all: a
 
-looper: looper.o 
-	gcc -m32 -g -Wall -o looper looper.o
+a: looper.o
+	gcc -m32 -g -Wall -o a looper.o
 
 looper.o: looper.c 
 	gcc -m32 -g -Wall -c -o looper.o looper.c
@@ -9,4 +9,4 @@ looper.o: looper.c
 .PHONY: clean
 
 clean: 
-	rm -f *.o looper
+	rm -f *.o a
