@@ -4,6 +4,7 @@
 #include <linux/limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 #include <unistd.h>
 #include "LineParser.h"
 #include <errno.h>
@@ -18,9 +19,9 @@ int debug = 0;
 
 typedef struct process
 {
-	cmdLine *cmd;         /* the parsed command line*/
-	pid_t pid;            /* the process id that is running the command*/
-	int status;           /* status of the process: RUNNING/SUSPENDED/TERMINATED */
+	cmdLine *cmd;		  /* the parsed command line*/
+	pid_t pid;			  /* the process id that is running the command*/
+	int status;			  /* status of the process: RUNNING/SUSPENDED/TERMINATED */
 	struct process *next; /* next process in chain */
 } process;
 
@@ -45,9 +46,9 @@ void updateProcessList(process **process_list)
 
 		if (pid == -1)
 			curr->status = TERMINATED;
-		else if (WIFCONTINUED(curr->status) > 0)
+		else if (WIFCONTINUED(curr->status))
 			curr->status = RUNNING;
-		else if (WIFSTOPPED(curr->status) > 0)
+		else if (WIFSTOPPED(curr->status))
 			curr->status = SUSPENDED;
 
 		curr = curr->next;
@@ -57,12 +58,12 @@ void updateProcessList(process **process_list)
 void printProcessList(process **process_list)
 {
 	updateProcessList(process_list);
-	int index = 0;
 	process *curr = *process_list, *prev = NULL;
-	printf("Index\tPID\tSTATUS\tCOMMAND\n");
+	int idx = 0;
+	printf("Index\tPID\tSTATUS\t\tCOMMAND\n");
 	while (curr != NULL)
 	{
-		printf("%d\t%d\t", index, curr->pid);
+		printf("%d\t%d\t", idx, curr->pid);
 		switch (curr->status)
 		{
 		case RUNNING:
@@ -83,26 +84,31 @@ void printProcessList(process **process_list)
 			printf("%s ", curr->cmd->arguments[i]);
 		}
 		printf("\n");
+		idx++;
 
 		if (curr->status == TERMINATED)
 		{
 			if (prev == NULL)
 			{
-				freeCmdLines(curr->cmd);
 				process *temp = curr;
 				curr = curr->next;
+				*process_list = curr;
+				freeCmdLines(temp->cmd);
 				free(temp);
 			}
 			else
 			{
-				freeCmdLines(curr->cmd);
 				process *temp = curr;
 				prev->next = curr->next;
+				freeCmdLines(temp->cmd);
 				free(temp);
 			}
 		}
-		prev = curr;
-		curr = curr->next;
+		else
+		{
+			prev = curr;
+			curr = curr->next;
+		}
 	}
 }
 
@@ -111,8 +117,8 @@ void freeProcessList(process *process_list)
 	while (process_list != NULL)
 	{
 		process *temp = process_list;
-		freeCmdLines(process_list);
 		process_list = process_list->next;
+		freeCmdLines(temp->cmd);
 		free(temp);
 	}
 }
@@ -132,15 +138,18 @@ void updateProcessStatus(process *process_list, int pid, int status)
 
 void execute(cmdLine *pCmdLine)
 {
-	if (strncmp(pCmdLine->arguments[0], "quit", 4) == 0)
+	if (strcmp(pCmdLine->arguments[0], "quit") == 0)
 	{
 		freeCmdLines(pCmdLine);
 		freeProcessList(global_processes);
 		exit(0);
 	}
 
-	if (strncmp(pCmdLine->arguments[0], "cd", 2) == 0)
+	if (strcmp(pCmdLine->arguments[0], "cd") == 0)
 	{
+		if (debug == 1)
+			fprintf(stderr, "Command: cd\n");
+
 		if (chdir(pCmdLine->arguments[1]) < 0)
 		{
 			perror("*** Error - chdir failed, errno: ");
@@ -150,9 +159,66 @@ void execute(cmdLine *pCmdLine)
 		}
 		freeCmdLines(pCmdLine);
 	}
-	else if (strncmp(pCmdLine->arguments[0], "proc", 4) == 0)
+	else if (strcmp(pCmdLine->arguments[0], "procs") == 0)
 	{
+		if (debug == 1)
+			fprintf(stderr, "Command: procs\n");
+
 		printProcessList(&global_processes);
+		freeCmdLines(pCmdLine);
+	}
+	else if (strcmp(pCmdLine->arguments[0], "suspend") == 0)
+	{
+		if (debug == 1)
+			fprintf(stderr, "Command: suspend\n");
+
+		int pid = strtol(pCmdLine->arguments[1], NULL, 10);
+
+		if (kill(pid, SIGTSTP) < 0)
+		{
+			perror("*** Error - kill - wake failed, errno: ");
+			fprintf(stderr, "%d\n", errno);
+			freeCmdLines(pCmdLine);
+			exit(errno);
+		}
+
+		updateProcessStatus(global_processes, pid, SUSPENDED);
+		freeCmdLines(pCmdLine);
+	}
+	else if (strcmp(pCmdLine->arguments[0], "kill") == 0)
+	{
+		if (debug == 1)
+			fprintf(stderr, "Command: kill\n");
+
+		int pid = strtol(pCmdLine->arguments[1], NULL, 10);
+
+		if (kill(pid, SIGINT) < 0)
+		{
+			perror("*** Error - kill - wake failed, errno: ");
+			fprintf(stderr, "%d\n", errno);
+			freeCmdLines(pCmdLine);
+			exit(errno);
+		}
+
+		updateProcessStatus(global_processes, pid, TERMINATED);
+		freeCmdLines(pCmdLine);
+	}
+	else if (strcmp(pCmdLine->arguments[0], "wake") == 0)
+	{
+		if (debug == 1)
+			fprintf(stderr, "Command: wake\n");
+
+		int pid = strtol(pCmdLine->arguments[1], NULL, 10);
+
+		if (kill(pid, SIGCONT) < 0)
+		{
+			perror("*** Error - kill - wake failed, errno: ");
+			fprintf(stderr, "%d\n", errno);
+			freeCmdLines(pCmdLine);
+			exit(errno);
+		}
+
+		updateProcessStatus(global_processes, pid, RUNNING);
 		freeCmdLines(pCmdLine);
 	}
 	else
@@ -190,7 +256,7 @@ void execute(cmdLine *pCmdLine)
 			if (debug == 1)
 				fprintf(stderr, "Command: waitpid, Pid: %d\n", pid);
 
-			if (waitpid(pid, NULL, 0) < 0)
+			if (waitpid(pid, 0, 0) < 0)
 			{
 				perror("*** Error - waitpid failed, errno: ");
 				fprintf(stderr, "%d\n", errno);
@@ -198,7 +264,7 @@ void execute(cmdLine *pCmdLine)
 				exit(errno);
 			}
 		}
-		freeCmdLines(pCmdLine);
+		//freeCmdLines(pCmdLine);
 	}
 }
 
