@@ -18,9 +18,9 @@ int debug = 0;
 
 typedef struct process
 {
-	cmdLine *cmd;		  /* the parsed command line*/
-	pid_t pid;			  /* the process id that is running the command*/
-	int status;			  /* status of the process: RUNNING/SUSPENDED/TERMINATED */
+	cmdLine *cmd;         /* the parsed command line*/
+	pid_t pid;            /* the process id that is running the command*/
+	int status;           /* status of the process: RUNNING/SUSPENDED/TERMINATED */
 	struct process *next; /* next process in chain */
 } process;
 
@@ -38,13 +38,27 @@ void addProcess(process **process_list, cmdLine *cmd, pid_t pid)
 
 void updateProcessList(process **process_list)
 {
+	process *curr = *process_list;
+	while (curr != NULL)
+	{
+		int pid = waitpid(curr->pid, &curr->status, WNOHANG);
+
+		if (pid == -1)
+			curr->status = TERMINATED;
+		else if (WIFCONTINUED(curr->status) > 0)
+			curr->status = RUNNING;
+		else if (WIFSTOPPED(curr->status) > 0)
+			curr->status = SUSPENDED;
+
+		curr = curr->next;
+	}
 }
 
 void printProcessList(process **process_list)
 {
 	updateProcessList(process_list);
 	int index = 0;
-	process *curr = *process_list;
+	process *curr = *process_list, *prev = NULL;
 	printf("Index\tPID\tSTATUS\tCOMMAND\n");
 	while (curr != NULL)
 	{
@@ -69,16 +83,51 @@ void printProcessList(process **process_list)
 			printf("%s ", curr->cmd->arguments[i]);
 		}
 		printf("\n");
+
+		if (curr->status == TERMINATED)
+		{
+			if (prev == NULL)
+			{
+				freeCmdLines(curr->cmd);
+				process *temp = curr;
+				curr = curr->next;
+				free(temp);
+			}
+			else
+			{
+				freeCmdLines(curr->cmd);
+				process *temp = curr;
+				prev->next = curr->next;
+				free(temp);
+			}
+		}
+		prev = curr;
 		curr = curr->next;
 	}
 }
 
 void freeProcessList(process *process_list)
 {
+	while (process_list != NULL)
+	{
+		process *temp = process_list;
+		freeCmdLines(process_list);
+		process_list = process_list->next;
+		free(temp);
+	}
 }
 
 void updateProcessStatus(process *process_list, int pid, int status)
 {
+	while (process_list != NULL)
+	{
+		if (process_list->pid == pid)
+		{
+			process_list->status = status;
+			break;
+		}
+		process_list = process_list->next;
+	}
 }
 
 void execute(cmdLine *pCmdLine)
@@ -100,6 +149,11 @@ void execute(cmdLine *pCmdLine)
 		}
 		freeCmdLines(pCmdLine);
 	}
+	else if (strncmp(pCmdLine->arguments[0], "proc", 4) == 0)
+	{
+		printProcessList(&global_processes);
+		freeCmdLines(pCmdLine);
+	}
 	else
 	{
 		int pid = fork(), exec_Code;
@@ -114,6 +168,8 @@ void execute(cmdLine *pCmdLine)
 			freeCmdLines(pCmdLine);
 			exit(errno);
 		}
+		
+		addProcess(&global_processes, pCmdLine, pid);
 
 		if (pid == 0)
 		{
