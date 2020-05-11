@@ -135,6 +135,7 @@ void execute(cmdLine *pCmdLine)
 	if (strncmp(pCmdLine->arguments[0], "quit", 4) == 0)
 	{
 		freeCmdLines(pCmdLine);
+		freeProcessList(global_processes);
 		exit(0);
 	}
 
@@ -168,7 +169,7 @@ void execute(cmdLine *pCmdLine)
 			freeCmdLines(pCmdLine);
 			exit(errno);
 		}
-		
+
 		addProcess(&global_processes, pCmdLine, pid);
 
 		if (pid == 0)
