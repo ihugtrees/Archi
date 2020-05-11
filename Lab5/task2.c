@@ -42,7 +42,7 @@ void updateProcessList(process **process_list)
     process *curr = *process_list;
     while (curr != NULL)
     {
-        int pid = waitpid(curr->pid, &curr->status, WNOHANG);
+        int pid = waitpid(curr->pid, 0, WNOHANG);
 
         if (pid == -1)
             curr->status = TERMINATED;
@@ -106,6 +106,7 @@ void printProcessList(process **process_list)
                 prev->next = curr->next;
                 freeCmdLines(temp->cmd);
                 free(temp);
+                curr = NULL;
             }
         }
         else
