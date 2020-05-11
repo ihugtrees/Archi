@@ -1,13 +1,26 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <signal.h>
 
-int main(int argc, char **argv){ 
+void sighandler(int signum)
+{
+    printf("Looper handling %s\n", strsignal(signum));
+    raise(signum);
+}
 
-	printf("Starting the program\n");
+int main(int argc, char **argv)
+{
 
-	while(1) {
-		sleep(2);
-	}
+    printf("Starting the program\n");
+    signal(SIGCONT, sighandler);
+    signal(SIGINT, sighandler);
+    signal(SIGTSTP, sighandler);
 
-	return 0;
+    while (1)
+    {
+        sleep(2);
+    }
+
+    return 0;
 }
