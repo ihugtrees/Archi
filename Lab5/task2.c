@@ -42,26 +42,37 @@ void updateProcessList(process **process_list)
     process *curr = *process_list;
     while (curr != NULL)
     {
-        int pid = waitpid(curr->pid, 0, WNOHANG);
+        int pid = waitpid(curr->pid, &curr->status, WNOHANG | WUNTRACED | WCONTINUED);
+        printf("PID: %d, Curr PID: %d\n", pid, curr->pid);
 
-        if (pid == -1)
+        if (pid < 0)
+        {
             curr->status = TERMINATED;
+            printf("pid < 0\n");
+        }
+        printf("status: %d\n", curr->status);
 
-        // if (pid == -1 || curr->status == 2){
-        //     curr->status = TERMINATED;
-        //     printf("TERMINATED\n");
-        // }
-        // if (WIFCONTINUED(curr->status))
-        // {
-        //     curr->status = RUNNING;
-        //     printf("WIFCONTINUED\n");
-        // }
+        if (pid > 0)
+        {
+            if (WIFSTOPPED(curr->status))
+            {
+                curr->status = SUSPENDED;
+                continue;
+                printf("WIFSTOPPED\n");
+            }
+            else if (WIFCONTINUED(curr->status))
+            {
+                curr->status = RUNNING;
+                continue;
+                printf("WIFCONTINUED\n");
+            }
+            else if (WIFEXITED(curr->status) || WIFSIGNALED(curr->status))
+            {
+                curr->status = TERMINATED;
+                printf("WIFEXITED\n");
+            }
+        }
 
-        // if (WIFSTOPPED(curr->status))
-        // {
-        //     curr->status = SUSPENDED;
-        //     printf("WIFSTOPPED\n");
-        // }
         curr = curr->next;
     }
 }
@@ -187,7 +198,7 @@ void execute(cmdLine *pCmdLine)
             exit(errno);
         }
 
-        updateProcessStatus(global_processes, pid, SUSPENDED);
+        //updateProcessStatus(global_processes, pid, SUSPENDED);
         freeCmdLines(pCmdLine);
     }
     else if (strcmp(pCmdLine->arguments[0], "kill") == 0)
@@ -205,7 +216,7 @@ void execute(cmdLine *pCmdLine)
             exit(errno);
         }
 
-        updateProcessStatus(global_processes, pid, TERMINATED);
+        //updateProcessStatus(global_processes, pid, TERMINATED);
         freeCmdLines(pCmdLine);
     }
     else if (strcmp(pCmdLine->arguments[0], "wake") == 0)
@@ -223,7 +234,7 @@ void execute(cmdLine *pCmdLine)
             exit(errno);
         }
 
-        updateProcessStatus(global_processes, pid, RUNNING);
+        //updateProcessStatus(global_processes, pid, RUNNING);
         freeCmdLines(pCmdLine);
     }
     else
