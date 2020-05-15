@@ -1,19 +1,38 @@
 
-section	.rodata			; we define (global) read-only variables in .rodata section
-	format_string: db "%s", 10, 0	; format string
+section	.rodata
+	print_hexa: db "%X", 10, 0
+	print_calc: db "calc: ", 10, 0
+	print_stackOverflow: db "Error: Operand Stack Overflow", 10, 0
+	print_stackLowOperands: db "Error: Insufficient Number of Arguments on Stack", 10, 0
 
-section .bss			; we define (global) uninitialized variables in .bss section
-	stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
+section .bss
+	;stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
+	userInput: resb 12
+	stack: resb 4
 
 section .data
-	stack_size: db 0
+	stack_size: db 5
+	stack_count: db 0
 	operations: db 0
 
 %macro startFunc 1
 	push	ebp
 	mov 	ebp, esp
 	sub		esp, %1
-%endmacro 
+%endmacro
+
+%macro endFunc 0	
+	popad			
+	mov esp, ebp
+	pop ebp
+	ret
+%endmacro
+
+%macro calcPrintHexa 1
+	push 	%1
+	push	print_hexa
+	call    printf
+%endmacro
 
 
 section .text
@@ -38,16 +57,127 @@ main:
 	add     eax,esi     ; add the size to the address of argv 
 	add     eax,4       ; skip NULL at the end of argv
 	;push    dword eax   ; char *envp[]
-	push    dword esi   ; char* argv[]
-	push    dword ecx   ; int argc
+	;push    dword esi   ; char* argv[]
+	;push    dword ecx   ; int argc
+	cmp     ecx,0
+	je      start_myCalc
+	mov     [stack_size], [esi+4]
 
-	call    main      
+start_myCalc:
+	mov 	eax, [stack_size] 
+	mov 	ebx, 5	;1 byte for data 4 for next pointer 
+	mul 	ebx
+	push 	eax
+	call 	malloc
+	mov 	[stack], eax	;stack points to our operand stack
+	jmp     myCalc
 
-	mov     ebx,eax
+end_myCalc:
+	calcPrintHexa [operations]
 	mov     eax,1
+	mov     ebx,0
 	int     0x80
 	nop
 
+myCalc:
+	startFunc 0
+
+	call malloc
+	myCalc_Loop:		
+		push	print_calc
+		call    printf
+		push 	ecx
+		call 	gets
+		cmp 	[ecx], '+'
+		je 		addition
+		cmp 	[ecx], 'p'
+		je 		popAndPrint
+		cmp 	[ecx], 'd'
+		je 		duplicate
+		cmp 	[ecx], '&'
+		je 		andOperation
+		cmp 	[ecx], '|'
+		je 		orOperation
+		cmp 	[ecx], 'n'
+		je 		numberOfHexa
+		cmp 	[ecx], 'q'
+		je 		quit
+		cmp 	[stack_count], [stack_size]
+		jge 	stackOverflow
+		; convert and add here
+		;
+		;
+		;
+		inc 	[stack_count]
+		jmp 	myCalc_Loop
+
+stackOverflow:
+	push 	print_stackOverflow
+	call 	printf
+	jmp 	myCalc_Loop
+
+stackLowOperands:
+	push 	print_stackLowOperands
+	call 	printf
+	jmp 	myCalc_Loop
+
+quit:
+	;push 	[stack]
+	;call 	free
+	jmp 	end_myCalc
+
+addition:
+	inc 	[operations]
+	cmp 	[stack_count], 2
+	jl 		stackLowOperands
+	;pop
+	;pop
+	;add
+	;push
+	jmp 	myCalc_Loop
+
+popAndPrint:
+	inc 	[operations]
+	cmp 	[stack_count], 1
+	jl 		stackLowOperands
+	;pop
+	;calcPrintHexa eax
+	jmp 	myCalc_Loop
+
+duplicate:
+	inc 	[operations]
+	cmp 	[stack_count], 1
+	jl 		stackLowOperands
+	;pop
+	;push
+	;push
+	jmp 	myCalc_Loop
+
+andOperation:
+	inc 	[operations]
+	cmp 	[stack_count], 2
+	jl 		stackLowOperands
+	;pop
+	;pop
+	;push
+	jmp 	myCalc_Loop
+
+orOperation:
+	inc 	[operations]
+	cmp 	[stack_count], 2
+	jl 		stackLowOperands
+	;pop
+	;pop
+	;push
+	jmp 	myCalc_Loop
+
+numberOfHexa:
+	inc 	[operations]
+	cmp 	[stack_count], 1
+	jl 		stackLowOperands
+	;pop
+	;push
+	jmp 	myCalc_Loop
 
 
 
@@ -63,20 +193,6 @@ main:
 
 
 
-
-
-
-convertor:
-	push ebp
-	mov ebp, esp
-	pushad
-
-	mov ecx, dword [ebp+8]	; get function argument (pointer to string)
-	mov dword [an] ,0
-	mov dword [an+4], 0
-	mov dword [an+8], 0		; and is a big number so it takes 3 iteration to zero it.
-	mov edi,an
-	xor eax,eax
 
 loop_number:
 	xor ebx,ebx
