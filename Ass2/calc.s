@@ -3,7 +3,18 @@ section	.rodata			; we define (global) read-only variables in .rodata section
 	format_string: db "%s", 10, 0	; format string
 
 section .bss			; we define (global) uninitialized variables in .bss section
-	an: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
+	stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
+
+section .data
+	stack_size: db 0
+	operations: db 0
+
+%macro startFunc 1
+	push	ebp
+	mov 	ebp, esp
+	sub		esp, %1
+%endmacro 
+
 
 section .text
 	align 16
@@ -19,6 +30,41 @@ section .text
 	extern fgets 
 
 main:
+	pop    dword ecx    ; ecx = argc
+	mov    esi,esp      ; esi = argv
+	;lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
+	mov     eax,ecx     ; put the number of arguments into eax
+	shl     eax,2       ; compute the size of argv in bytes
+	add     eax,esi     ; add the size to the address of argv 
+	add     eax,4       ; skip NULL at the end of argv
+	;push    dword eax   ; char *envp[]
+	push    dword esi   ; char* argv[]
+	push    dword ecx   ; int argc
+
+	call    main      
+
+	mov     ebx,eax
+	mov     eax,1
+	int     0x80
+	nop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 convertor:
 	push ebp
