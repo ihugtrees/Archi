@@ -484,7 +484,6 @@ main:
 			jmp printCalc
 			
 
-
 			jmpPower:
 			add dword [numOfOperation],1
 			cmp [debug_mode],byte 1
@@ -545,11 +544,6 @@ main:
 
 			jmp printCalc
 			
-
-		
-
-
-
 			jmpSqrtPower:
 			add dword [numOfOperation],1
 			checkLegOperandStack

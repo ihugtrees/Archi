@@ -18,10 +18,9 @@ section .data
 	lastItem: dd 0
 	debug: db 0
 
-%macro startFunc 1
+%macro startFunc 0
 	push	ebp
 	mov 	ebp, esp
-	sub		esp, %1
 %endmacro
 
 %macro endFunc 0	
@@ -68,24 +67,25 @@ main:
 	mov     [stack_size], eax
 
 start_myCalc:
-	mov 	eax, [stack_size] 
-	mov 	ebx, 5	;1 byte for data 4 for next pointer 
+	mov 	eax, [stack_size]
+	mov 	ebx, 4	; 4 bytes pointer
 	mul 	ebx
 	push 	eax
 	call 	malloc
+	add     esp, 4
 	mov 	[stackPointer], eax	;stack points to our operand stack
 	mov     [lastItem], [stackPointer]
 	jmp     myCalc
 
 end_myCalc:
 	calcPrintHexa [operations]
-	mov     eax,1
-	mov     ebx,0
+	mov     eax, 1
+	mov     ebx, 0
 	int     0x80
 	nop
 
 myCalc:
-	startFunc 0
+	startFunc
 
 	calcLoop:
 		push	print_calc
@@ -117,14 +117,11 @@ myCalc:
 
 addNumToStack:
 	startFunc
-
-	createLink:
-		startFunc
-		cmp 	[length], 1
-		je 		
-
-	convertHexa:
-		startFunc
+	
+	push 5
+	push 1
+	call calloc
+	
 
 convertStringToInt:
 	;ecx->pointer to string
