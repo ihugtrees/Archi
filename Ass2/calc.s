@@ -1,30 +1,12 @@
 
-section	.rodata
-	print_hexa: db "%X", 10, 0
-	print_calc: db "calc: ", 10, 0
-	print_stackOverflow: db "Error: Operand Stack Overflow", 10, 0
-	print_stackLowOperands: db "Error: Insufficient Number of Arguments on Stack", 10, 0
-
-section .bss
-	;stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
-	userInput: resb 50
-	;stack: resb 4
-
-section .data
-	stack_size: db 5
-	stack_count: db 0
-	operations: dd 0
-	stackPointer: dd 0
-	lastItem: dd 0
-	debug: db 0
 
 %macro startFunc 0
 	push	ebp
 	mov 	ebp, esp
 %endmacro
 
-%macro endFunc 0	
-	popad			
+%macro endFunc 0
+	popad
 	mov esp, ebp
 	pop ebp
 	ret
@@ -36,18 +18,40 @@ section .data
 	call    printf
 %endmacro
 
+section	.rodata
+	print_hexa: db "%X", 10, 0
+	print_calc: db "calc: ", 10, 0
+	print_stackOverflow: db "Error: Operand Stack Overflow", 10, 0
+	print_stackLowOperands: db "Error: Insufficient Number of Arguments on Stack", 10, 0
+
+section .bss
+	;stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
+	userInput: resb 50
+	operandStack: resb 20
+	lastLink: resd 1
+
+section .data
+	stack_size: db 5
+	stack_count: db 0
+	operations: db 0
+	stackPointer: dd 0
+	lastOperand: db 0
+	debug: db 0
+	isFirsLink: db 0
+	inputLength: db 0
+
 section .text
 	align 16
 	global main
 	extern printf
-	extern fprintf 
+	extern fprintf
 	extern fflush
-	extern malloc 
-	extern calloc 
-	extern free 
-	extern gets 
-	extern getchar 
-	extern fgets 
+	extern malloc
+	extern calloc
+	extern free
+	extern gets
+	extern getchar
+	extern fgets
 
 main:
 	pop    dword ecx    ; ecx = argc
@@ -55,7 +59,7 @@ main:
 	;lea eax, [esi+4*ecx+4] ; eax = envp = (4*ecx)+esi+4
 	mov     eax,ecx     ; put the number of arguments into eax
 	shl     eax,2       ; compute the size of argv in bytes
-	add     eax,esi     ; add the size to the address of argv 
+	add     eax,esi     ; add the size to the address of argv
 	add     eax,4       ; skip NULL at the end of argv
 	;push    dword eax   ; char *envp[]
 	;push    dword esi   ; char* argv[]
@@ -63,18 +67,17 @@ main:
 	cmp     ecx,1
 	je      start_myCalc
 	mov 	ecx, [esi + 4]
-	call 	convertStringToInt
+	;call 	convertStringToInt
 	mov     [stack_size], eax
 
 start_myCalc:
-	mov 	eax, [stack_size]
+	mov 	eax, [stack_size] ; 5 default
 	mov 	ebx, 4	; 4 bytes pointer
 	mul 	ebx
 	push 	eax
 	call 	malloc
 	add     esp, 4
-	mov 	[stackPointer], eax	;stack points to our operand stack
-	mov     [lastItem], [stackPointer]
+	mov 	operandStack, eax	; pointer to operand stack
 	jmp     myCalc
 
 end_myCalc:
@@ -88,6 +91,7 @@ myCalc:
 	startFunc
 
 	calcLoop:
+		mov byte [isFirsLink], 0
 		push	print_calc
 		call    printf
 		add     esp, 4
@@ -95,7 +99,8 @@ myCalc:
 		push    userInput
 		call    gets
 		add		esp, 4
-		
+		call    getInputLength
+
 		cmp 	[userInput], '+'
 		je 		addition
 		cmp 	[userInput], 'p'
@@ -115,12 +120,100 @@ myCalc:
 		call 	addNumToStack
 		jmp 	calcLoop
 
+getInputLength:
+	startFunc
+	mov [inputLength], 0
+	mov ecx, userInput
+
+	lengthLoop:
+		cmp [ecx], 0xa
+		je newLine
+		inc ecx
+		add byte [inputLength], 1
+		jmp lengthLoop
+
+	newLine:
+		mov [ecx], 0
+		endFunc
+
 addNumToStack:
 	startFunc
-	
-	push 5
-	push 1
-	call calloc
+
+	isEndOfInput:
+		cmp [inputLength], 0
+		je doneAddingNumberToStack
+		call createLinkedList
+		sub [inputLength], 2
+		jmp isEndOfInput
+
+	doneAddingNumberToStack:
+		add [lastOperand], 4
+		;jmp finish
+
+createLinkedList:
+	startFunc
+
+	createNumber:
+		xor ebx, ebx ; sum
+		xor ecx, ecx ; input pointer
+		xor edx, edx ; the char
+		add ecx, [inputLength]
+		dec ecx
+		add edx, [userInput + ecx]
+		call createInt
+
+		mov [userInput + ecx], 0
+		add ebx, eax
+
+		xor edx, edx
+		dec ecx
+		add edx, [userInput + ecx]
+		call createInt
+		shl eax, 4
+		add ebx, eax
+		mov [userInput + ecx], 0
+
+	createSingleLink:
+		push 5
+		push 1
+		call calloc
+		add esp, 8
+		mov byte [eax], ebx
+		cmp [isFirsLink], 0
+		jg notFirst
+
+		isFirst:
+		xor ecx, ecx
+		mov [lastLink], eax
+		mov ecx, [lastOperand]
+		mov [operandStack + ecx], eax
+		add [isFirsLink], byte 1
+		jmp endFirst
+
+		notFirst:
+		xor ecx, ecx
+		mov ecx, [lastLink]
+		inc ecx
+		mov dword [ecx], eax
+		mov [lastLink], eax
+
+		endFirst:
+		endFunc
+
+
+createInt:
+	startFunc
+	cmp edx, 65
+	jge upperCase
+	sub edx,48
+	jmp done
+
+	upperCase:
+	sub edx, 55
+
+	done:
+	mov eax, edx
+	endFunc
 	
 
 convertStringToInt:
@@ -137,7 +230,7 @@ convertStringToInt:
 		cmp ebx, 'A'
 		jge subCharacter
 		sub ebx, 48
-		
+
 		addInt:
 		mov esi, 16
 		mul esi

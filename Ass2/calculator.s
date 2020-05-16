@@ -54,7 +54,7 @@
     add esp, 8
 %endmacro
 
-%macro createLinkMacro 0		
+%macro createLinkMacro 0
     xor ecx, ecx
     push dword [linkSize]
     push 1
@@ -65,14 +65,14 @@
     jne %%notFirst1
 
     %%isFirst1:
-    xor ecx, ecx 		
-    mov [lastLink], eax		
+    xor ecx, ecx
+    mov [lastLink], eax
     add [isFirstLink], byte 1
     jmp %%endFirst
-    
+
     %%notFirst1:
     xor ecx, ecx
-    
+
     mov ecx, [lastLink] 					; if the number was not the first, update lastLink
     inc ecx
     mov dword [ecx], eax
@@ -84,12 +84,12 @@
     xor edx, edx
     xor eax, eax
     mov dword eax, [%1]
-    mov dword edx, [eax + 1] 
+    mov dword edx, [eax + 1]
     cmp edx, 0
     je %%lastLink
 
     %%checkLast:
-    xor ebx, ebx 
+    xor ebx, ebx
     mov edx, [eax + 1]
     cmp dword edx, 0
     je %%lastLink
@@ -112,11 +112,11 @@
     add esp, 4
     popad
     jmp %%checkLast
-    %%end:	
+    %%end:
 %endmacro
 
 
-%macro removeZero 0 
+%macro removeZero 0
     push eax
     mov edx, 0
     mov esi , 0
@@ -145,7 +145,7 @@
     mov [buffer+1],byte 0xA
     %%finish1:
     pop eax
-%endmacro		
+%endmacro
 
 %macro backtoString 1
     cmp %1 , 9
@@ -155,7 +155,7 @@
     %%lowernumbers:
     add %1 ,48
     %%finishloop:
-%endmacro	
+%endmacro
 
 %macro clearBuff 1
     xor eax,eax
@@ -271,12 +271,12 @@ section .bss
 
 section .text
 	     align 16
-	     global main 
-	     extern printf 
+	     global main
+	     extern printf
 	     extern fflush
-	     extern malloc 
-	     extern calloc 
-	     extern free 
+	     extern malloc
+	     extern calloc
+	     extern free
 	     extern fgets
 	     extern stdin
 	     extern stdout
@@ -333,7 +333,7 @@ main:
 			push buffer
 			call cDeleteLine
 			add esp, 4
-			
+
 
 		checkInput:
 			mov dword[ebp-4], 0
@@ -371,7 +371,7 @@ main:
 			mov dword [carry], 0
 			cmp dword [operandStackPointer], 8
 			jl Insufficient
-								
+
 
 			legalAdd:
 			xor eax, eax
@@ -384,7 +384,7 @@ main:
 			mov dword ecx, [operandStack + eax]
 			push ecx
 			mov dword [operandStackPointer], eax
-			
+
 			call Addition
 			xor ebx, ebx
 			xor ecx, ecx
@@ -407,11 +407,11 @@ main:
 			mov byte [tempOdd], 0
 			mov byte [flag2],1
 			cmp [flag1],byte 1
-			jne regular_dup 
+			jne regular_dup
 			reular_add1:
 			debug_print pushed
 			sub dword [operandStackPointer], 4
-			call PopAndPrint 
+			call PopAndPrint
 			regular_add_res:
 			mov byte [flag2],0
 			jmp printCalc
@@ -430,10 +430,10 @@ main:
 			cmp dword [operandStackPointer], 4
 			jl Insufficient
 			sub dword [operandStackPointer],4
-			
+
 			call PopAndPrint
 			jmp printCalc
-			
+
 
 			jmpDuplicate:
 			add dword [numOfOperation],1
@@ -447,13 +447,13 @@ main:
 			cmp dword [operandStackPointer], 16
 			jle checkNotEmpty
 			sub dword [numOfOperation],1
-			jmp pOverflow 
+			jmp pOverflow
 			checkNotEmpty:
 			cmp dword [operandStackPointer], 4
 			jge legalDup
 			sub dword [numOfOperation],1
 			jmp Insufficient
-			
+
 			legalDup:
 			mov eax, [operandStackPointer]
 			sub eax, 4 										;get the last operand that was inserted to the operand stack
@@ -471,18 +471,18 @@ main:
 			je reular_add1
 			cmp byte [flag1],1
 			je regular_dup_res
-			mov byte [flag1],1	
+			mov byte [flag1],1
 			debug_print pushed
 			sub dword [operandStackPointer], 4
-			call PopAndPrint 
+			call PopAndPrint
 			mov byte [isFirstLink], 0
 			mov byte [tempOdd], 0
 			jmp regular_dup
 			popad
-			regular_dup_res:	
-			mov byte [flag1],0 
+			regular_dup_res:
+			mov byte [flag1],0
 			jmp printCalc
-			
+
 
 			jmpPower:
 			add dword [numOfOperation],1
@@ -496,9 +496,9 @@ main:
 			cmp dword [operandStackPointer], 8
 			jl Insufficient
 			jmp legalPow
-			
+
 			legalPow:
-			
+
 			mov dword eax, [operandStackPointer]
 			sub eax, 4
 			mov dword ebx, [operandStack + eax] 				; X
@@ -535,15 +535,15 @@ main:
 			mov byte [tempOdd], 0
 			mov byte [flag2],1
 			cmp [flag1],byte 1
-			jne regular_dup 
+			jne regular_dup
 			debug_print pushed
 			sub dword [operandStackPointer], 4
-			call PopAndPrint 
+			call PopAndPrint
 			regular_pow_res:
 			mov byte [flag2],0
 
 			jmp printCalc
-			
+
 			jmpSqrtPower:
 			add dword [numOfOperation],1
 			checkLegOperandStack
@@ -553,7 +553,7 @@ main:
 			debug_print buffer
 			jdown
 			regular_spwr:
-			
+
 			popTwoOperands
 			checkYvalue byte [ecx]
 			xor esi, esi
@@ -568,14 +568,14 @@ main:
 			mov byte [tempOdd], 0
 			mov byte [flag2],1
 			cmp [flag1],byte 1
-			jne regular_dup 
+			jne regular_dup
 			debug_print pushed
 			sub dword [operandStackPointer], 4
-			call PopAndPrint 
+			call PopAndPrint
 			regular_spow_res:
 			mov byte [flag2],0
 			jmp printCalc
-			
+
 
 			jmpNumberOfOnes:
 			add dword [numOfOperation],1
@@ -590,7 +590,7 @@ main:
 			cmp dword [operandStackPointer], 4
 			jl Insufficient
 			sub dword [operandStackPointer],4
-			
+
 			call NumberOfOnes
 			cmp [debug_mode],byte 1
 			jne regular_ones_res
@@ -599,10 +599,10 @@ main:
 			mov byte [tempOdd], 0
 			mov byte [flag2],1
 			cmp [flag1],byte 1
-			jne legalDup 
+			jne legalDup
 			debug_print pushed
 			sub dword [operandStackPointer], 4
-			call PopAndPrint 
+			call PopAndPrint
 			regular_ones_res:
 			mov byte [flag2],0
 			jmp printCalc
@@ -635,26 +635,26 @@ main:
 
 		 cDeleteLine:
 		 	startFunction
-		 	mov dword [count],0         ; intiate counter to count length of checkInput   
+		 	mov dword [count],0         ; intiate counter to count length of checkInput
 			mov ecx,82					; buffer size
 			mov edx, buffer				; buffer address
-			
+
 			deleteLoop:					; serch for new line in the buffer, and delete it
 			cmp byte [edx],0xa
 			je l1 					; if finds a new line, replace him with 0
 			add byte [count],1
 			inc edx
 			loop deleteLoop
-			
+
 			l1:
 			mov byte [edx],0
 			inc edx
 			endFunctionParameter
 
-		
+
 		cInsertNumberToStack:
 			startFunction
-			and ecx,0	
+			and ecx,0
 
 			CheckIfOver:
 				cmp dword [count], 0
@@ -689,13 +689,13 @@ main:
 				dec ecx
 				add edx, [buffer + ecx]		; Extract the first number to be convert
 				mov dword [ebp-4], eax
-				push edx					
+				push edx
 				call makeInt
 				add esp, 4
-				
+
 				mov byte [buffer+ecx], 0
 											; move the the next char at the buffer
-				add ebx, eax				
+				add ebx, eax
 
 				dec ecx
 				xor edx, edx
@@ -722,8 +722,8 @@ main:
 				jne notFirst
 
 				isFirst:
-				xor ecx, ecx 
-				mov [lastLink], eax		
+				xor ecx, ecx
+				mov [lastLink], eax
 				mov ecx, [operandStackPointer]			; if first tell the operand where to point
 				mov [operandStack + ecx], eax
 				add [isFirstLink], byte 1
@@ -742,7 +742,7 @@ main:
 
 			cmp dword [operandStackPointer], 16
 			jg Insufficient
-			jmp cont				
+			jmp cont
 
 				makeInt:
 					startFunction
@@ -777,7 +777,7 @@ main:
 				popa
 				mov eax, dword [temp]
 				mov esp, ebp
-				pop ebp 
+				pop ebp
 				ret
 
 
@@ -846,7 +846,7 @@ Addition:
 	cmp byte [isFirstLink], 0
 	je putNewLinkToPushAddress
 	jmp notPutNewLinkToPushAddress
-	
+
 	putNewLinkToPushAddress:					; update the last link pointers
 	pushad
 	createLinkMacro
@@ -855,7 +855,7 @@ Addition:
 	xor edx, edx
 	mov dword edx ,[newLinkToPushAddress]
 	mov byte [edx], al
-		
+
 
 	jmp notFirstLinks1
 
@@ -875,14 +875,14 @@ Addition:
 	je noMoreFirstLinks
 	xor edx, edx
 	mov edx, [ebx + 1]
-	mov dword [firstLastLinkAddress], edx 
-	
+	mov dword [firstLastLinkAddress], edx
+
 	jmp notFirstLinks2
 
 	noMoreFirstLinks:
 	mov byte [isMoreFirst], 1 					; mark by 1 if there are no more first
 	jmp notFirstLinks2
-	
+
 	notFirstLinks2:
 	cmp dword [ecx + 1], 0						; checks if there are more links of the second number
 	je noMoreSecondLinks
@@ -900,7 +900,7 @@ Addition:
 	xor ebx, ebx
 	mov bl, [isMoreFirst]
 	mov dl, [isMoreSecond]
-	
+
 		compare1:
 		cmp byte bl, 0
 		je checkDl
@@ -909,7 +909,7 @@ Addition:
 		cmp byte dl, 0
 		je bothHaveCont
 
-		compare2: 
+		compare2:
 		cmp byte bl, 1
 		je checkDl2
 		jmp compare3
@@ -935,9 +935,9 @@ Addition:
 	mov dword ecx, [secondLastLinkAddress]
 	jmp atLeastTwoFirst
 
-	
-	
-	
+
+
+
 	onlySecondLeft:
 	cmp byte [isMoreSecond], 1
 	je checkCarry
@@ -999,17 +999,17 @@ Addition:
 	xor edx, edx
 	mov dword edx ,[lastLink]
 	mov byte [edx], 1
-	
+
 	endAddition:
 	cmp byte [isFirstLink], 1
 	je updateStack
-	
+
 
 	updateStack:
 	xor ecx, ecx
 	mov ecx, [newLinkToPushAddress]
 	mov dword [ebp - 4], ecx
-	
+
 	endFunctionParameter
 
 PopAndPrint:
@@ -1043,7 +1043,7 @@ PopAndPrint:
 		pushad
 		push ecx
 		call free
-		add esp,4	
+		add esp,4
 		popad
 		backtoString ebx
 		mov [buffer+esi], bl
@@ -1059,7 +1059,7 @@ PopAndPrint:
 		jmp printTheStack
 
 	endPopAndPrint:
-		removeZero 
+		removeZero
 		push dword buffer
 		push format_string
 		call printf
@@ -1077,7 +1077,7 @@ Duplicate:
 	xor ebx, ebx
 	xor ecx, ecx
 	xor edx, edx
-	
+
 	dupLink:
 	pushad
 	createLinkMacro
@@ -1102,7 +1102,7 @@ Duplicate:
 	mov edx, [newLinkToPushAddress]
 	endDuplicate:
 	mov [ebp - 4], edx
-				
+
 	endFunctionParameter
 
 Power:
@@ -1132,7 +1132,7 @@ Power:
 	multWithDupAndAdd:
 	mov ecx, [powerNumber]
 	mov edx, [XnumberPower]
-	
+
 	loop1:
 	mov byte [isFirstToDup], 0
 	mov byte [isFirstLink], 0
@@ -1151,10 +1151,10 @@ Power:
 	pushad
 	mov dword eax, [operandStackPointer]
 	sub eax, 4
-	mov dword ebx, [operandStack + eax] 				
+	mov dword ebx, [operandStack + eax]
 	sub eax, 4
 	mov dword ecx, [operandStack + eax]
-	mov dword [operandStackPointer], eax				
+	mov dword [operandStackPointer], eax
 	push ebx
 	push ecx
 	call Addition
@@ -1267,7 +1267,7 @@ NumberOfOnes:
 		pushad
 		push ecx
 		call free
-		add esp,4	
+		add esp,4
 		popad
 		xor ecx,ecx
 		mov cl,8
@@ -1275,7 +1275,7 @@ NumberOfOnes:
 	countloop:
 		xor edi,edi
 		cmp cl,0
-		je countOnes		
+		je countOnes
 		mov al,dl
 		and dl ,1
 		add byte [numofOnes] , dl
@@ -1289,7 +1289,7 @@ NumberOfOnes:
 		dec cl
 		jmp countloop
 
-	endsession:	
+	endsession:
 			clearBuff buffer
 			xor ecx,ecx
 			xor edi,edi
