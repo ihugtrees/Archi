@@ -7,13 +7,16 @@ section	.rodata
 
 section .bss
 	;stack_max: resb 12		; enough to store integer in [-2,147,483,648 (-2^31) : 2,147,483,647 (2^31-1)]
-	userInput: resb 12
-	stack: resb 4
+	userInput: resb 50
+	;stack: resb 4
 
 section .data
 	stack_size: db 5
 	stack_count: db 0
-	operations: db 0
+	operations: dd 0
+	stackPointer: dd 0
+	lastItem: dd 0
+	debug: db 0
 
 %macro startFunc 1
 	push	ebp
@@ -33,7 +36,6 @@ section .data
 	push	print_hexa
 	call    printf
 %endmacro
-
 
 section .text
 	align 16
@@ -59,9 +61,11 @@ main:
 	;push    dword eax   ; char *envp[]
 	;push    dword esi   ; char* argv[]
 	;push    dword ecx   ; int argc
-	cmp     ecx,0
+	cmp     ecx,1
 	je      start_myCalc
-	mov     [stack_size], [esi+4]
+	mov 	ecx, [esi + 4]
+	call 	convertStringToInt
+	mov     [stack_size], eax
 
 start_myCalc:
 	mov 	eax, [stack_size] 
@@ -69,7 +73,8 @@ start_myCalc:
 	mul 	ebx
 	push 	eax
 	call 	malloc
-	mov 	[stack], eax	;stack points to our operand stack
+	mov 	[stackPointer], eax	;stack points to our operand stack
+	mov     [lastItem], [stackPointer]
 	jmp     myCalc
 
 end_myCalc:
@@ -82,34 +87,73 @@ end_myCalc:
 myCalc:
 	startFunc 0
 
-	call malloc
-	myCalc_Loop:		
+	calcLoop:
 		push	print_calc
 		call    printf
-		push 	ecx
-		call 	gets
-		cmp 	[ecx], '+'
+		add     esp, 4
+
+		push    userInput
+		call    gets
+		add		esp, 4
+		
+		cmp 	[userInput], '+'
 		je 		addition
-		cmp 	[ecx], 'p'
+		cmp 	[userInput], 'p'
 		je 		popAndPrint
-		cmp 	[ecx], 'd'
+		cmp 	[userInput], 'd'
 		je 		duplicate
-		cmp 	[ecx], '&'
+		cmp 	[userInput], '&'
 		je 		andOperation
-		cmp 	[ecx], '|'
+		cmp 	[userInput], '|'
 		je 		orOperation
-		cmp 	[ecx], 'n'
+		cmp 	[userInput], 'n'
 		je 		numberOfHexa
-		cmp 	[ecx], 'q'
+		cmp 	[userInput], 'q'
 		je 		quit
 		cmp 	[stack_count], [stack_size]
 		jge 	stackOverflow
-		; convert and add here
-		;
-		;
-		;
-		inc 	[stack_count]
-		jmp 	myCalc_Loop
+		call 	addNumToStack
+		jmp 	calcLoop
+
+addNumToStack:
+	startFunc
+
+	createLink:
+		startFunc
+		cmp 	[length], 1
+		je 		
+
+	convertHexa:
+		startFunc
+
+convertStringToInt:
+	;ecx->pointer to string
+	;eax returns the int
+	startFunc
+	xor eax,eax
+	loop_number:
+		xor ebx,ebx
+		mov bl, byte [ecx]
+		inc ecx
+		cmp ebx , 0x0A
+		je finished_number
+		cmp ebx, 'A'
+		jge subCharacter
+		sub ebx, 48
+		
+		addInt:
+		mov esi, 16
+		mul esi
+		add eax, ebx
+		jmp loop_number
+
+		subCharacter:
+			sub ebx, 55
+			jmp addInt
+
+	finished_number:
+	endFunc
+
 
 stackOverflow:
 	push 	print_stackOverflow
@@ -178,83 +222,3 @@ numberOfHexa:
 	;pop
 	;push
 	jmp 	myCalc_Loop
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-loop_number:
-	xor ebx,ebx
-	mov bl, byte [ecx]
-	inc ecx
-	cmp ebx , 0x0A
-	je finished_number
-
-	mov esi, 10
-	mul esi
-	sub ebx,48
-	add eax,ebx
-	jmp loop_number
-
-finished_number:
-	xor ebx,ebx
-	xor edx,edx
-	cmp eax, 0
-	je print_zero
-	mov ebx, 16
-	mov cl,0
-
-pushJump:
-	cmp eax,0
-	je popStack
-	div ebx
-	inc cl
-	push edx
-	xor edx,edx
-	jmp pushJump
-
-popStack:
-	xor eax,eax
-	pop eax
-	cmp eax,10
-	jge to_char
-
-to_num:
-	add eax,48
-	jmp done_converting
-
-to_char:
-	add eax,55
-
-done_converting:
-	mov [edi],  eax
-	inc edi
-	dec cl
-	cmp cl,0
-	jnz popStack
-	jmp toPrint
-
-print_zero:
-	add eax,48
-	mov [edi],  eax
-
-toPrint:
-	push an	    		; call printf with 2 arguments
-	push format_string	; pointer to str and pointer to format string
-	call printf
-	add esp, 8      	; clean up stack after call
-	popad			
-	mov esp, ebp	
-	pop ebp
-	ret
