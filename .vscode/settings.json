@@ -2,6 +2,8 @@
     "files.associations": {
         "limits.h": "c",
         "climits": "c",
-        "signal.h": "c"
+        "signal.h": "c",
+        "limits": "c",
+        "*.tcc": "c"
     }
 }
