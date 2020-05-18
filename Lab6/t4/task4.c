@@ -100,14 +100,14 @@ void updateProcessList(process **process_list)
 	while (curr != NULL)
 	{
 		int pid = waitpid(curr->pid, &curr->status, WNOHANG | WUNTRACED | WCONTINUED);
-		printf("PID: %d, Curr PID: %d\n", pid, curr->pid);
+		//printf("PID: %d, Curr PID: %d\n", pid, curr->pid);
 
 		if (pid < 0)
 		{
 			curr->status = TERMINATED;
-			printf("pid < 0\n");
+			//printf("pid < 0\n");
 		}
-		printf("status: %d\n", curr->status);
+		//printf("status: %d\n", curr->status);
 
 		if (pid > 0)
 		{
@@ -218,6 +218,133 @@ void updateProcessStatus(process *process_list, int pid, int status)
 		}
 		process_list = process_list->next;
 	}
+}
+
+void replaceCmdlineVars(cmdLine *pCmdLine)
+{
+	for (size_t i = 0; i < pCmdLine->argCount; i++)
+	{
+		if (pCmdLine->arguments[i][0] == '$')
+		{
+			char *toReplace = getVarValue(global_vars, &pCmdLine->arguments[i][1]);
+			if (toReplace != NULL)
+			{
+				replaceCmdArg(pCmdLine, i, toReplace);
+			}
+			else
+			{
+				perror("*** Error - Activating a variable that does not exist\n");
+				freeCmdLines(pCmdLine);
+				exit(1);
+			}
+		}
+	}
+}
+
+void startPiping(cmdLine *pCmdLine)
+{
+	printf("starting to pipe\n");
+	
+	int tube[2], exec_Code;
+	pipe(tube);
+	int child1 = fork();
+
+	if (debug == 1)
+		fprintf(stderr, "Command: fork pipes 1, Pid: %d\n", child1);
+
+	if (child1 < 0)
+	{
+		perror("*** Error - fork failed, errno: ");
+		fprintf(stderr, "%d\n", errno);
+		freeCmdLines(pCmdLine);
+		exit(errno);
+	}
+
+	replaceCmdlineVars(pCmdLine);
+	addProcess(&global_processes, pCmdLine, child1);
+
+	if (child1 == 0)
+	{
+		int input = -1;
+
+		close(STDOUT_FILENO);
+		dup(tube[1]);
+		close(tube[1]);
+
+		if (pCmdLine->inputRedirect != NULL)
+		{
+			input = open(pCmdLine->inputRedirect, O_RDONLY);
+			close(STDIN_FILENO);
+
+			if (dup(input) == -1)
+			{
+				perror("*** Error - dup stdin failed, errno: ");
+				fprintf(stderr, "%d\n", errno);
+				freeCmdLines(pCmdLine);
+				_exit(errno);
+			}
+		}
+
+		if ((exec_Code = execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0))
+		{
+			perror("*** Error - execvp failed, errno: ");
+			fprintf(stderr, "%d\n", errno);
+			freeCmdLines(pCmdLine);
+			_exit(errno);
+		}
+	}
+	close(tube[1]);
+
+	cmdLine *secondCmdLine = pCmdLine->next;
+
+	int child2 = fork();
+
+	if (debug == 1)
+		fprintf(stderr, "Command: fork pipes 1, Pid: %d\n", child2);
+
+	if (child2 < 0)
+	{
+		perror("*** Error - fork failed, errno: ");
+		fprintf(stderr, "%d\n", errno);
+		freeCmdLines(secondCmdLine);
+		exit(errno);
+	}
+
+	replaceCmdlineVars(secondCmdLine);
+	addProcess(&global_processes, secondCmdLine, child2);
+
+	if (child2 == 0)
+	{
+		int output = -1;
+		close(STDIN_FILENO);
+		dup(tube[0]);
+		close(tube[0]);
+
+		if (pCmdLine->outputRedirect != NULL)
+		{
+			output = open(pCmdLine->outputRedirect, O_CREAT | O_WRONLY, S_IRWXU);
+			close(STDOUT_FILENO);
+
+			if (dup(output) == -1)
+			{
+				perror("*** Error - dup stdout failed, errno: ");
+				fprintf(stderr, "%d\n", errno);
+				freeCmdLines(pCmdLine);
+				_exit(errno);
+			}
+		}
+
+		if ((exec_Code = execvp(secondCmdLine->arguments[0], secondCmdLine->arguments) < 0))
+		{
+			perror("*** Error - execvp failed, errno: ");
+			fprintf(stderr, "%d\n", errno);
+			freeCmdLines(secondCmdLine);
+			_exit(errno);
+		}
+	}
+	close(tube[0]);
+	waitpid(child1, NULL, 0);
+	waitpid(child2, NULL, 0);
 }
 
 void execute(cmdLine *pCmdLine)
@@ -331,50 +458,14 @@ void execute(cmdLine *pCmdLine)
 	}
 	else if (pCmdLine->next != NULL)
 	{
-		int tube[2], exec_Code;
-		pipe(tube);
-		int child1 = fork();
-		if (child1 == 0)
-		{
-			close(STDOUT_FILENO);
-			dup(tube[1]);
-			close(tube[1]);
-			if ((exec_Code = execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0))
-			{
-				perror("*** Error - execvp failed, errno: ");
-				fprintf(stderr, "%d\n", errno);
-				freeCmdLines(pCmdLine);
-				_exit(errno);
-			}
-		}
-		close(tube[1]);
-
-		cmdLine *secondCmdLine = pCmdLine->next;
-
-		int child2 = fork();
-		if (child2 == 0)
-		{
-			close(STDIN_FILENO);
-			dup(tube[0]);
-			close(tube[0]);
-			if ((exec_Code = execvp(secondCmdLine->arguments[0], secondCmdLine->arguments) < 0))
-			{
-				perror("*** Error - execvp failed, errno: ");
-				fprintf(stderr, "%d\n", errno);
-				freeCmdLines(secondCmdLine);
-				_exit(errno);
-			}
-		}
-		close(tube[0]);
-		waitpid(child1, NULL, 0);
-		waitpid(child2, NULL, 0);
+		startPiping(pCmdLine);		
 	}
 	else
 	{
 		int pid = fork(), exec_Code;
 
 		if (debug == 1)
-			fprintf(stderr, "Command: fork, Pid: %d\n", pid);
+			fprintf(stderr, "Command: fork without pipes, Pid: %d\n", pid);
 
 		if (pid < 0)
 		{
@@ -384,24 +475,7 @@ void execute(cmdLine *pCmdLine)
 			exit(errno);
 		}
 
-		for (size_t i = 0; i < pCmdLine->argCount; i++)
-		{
-			if (pCmdLine->arguments[i][0] == '$')
-			{
-				char *toReplace = getVarValue(global_vars, &pCmdLine->arguments[i][1]);
-				if (toReplace != NULL)
-				{
-					replaceCmdArg(pCmdLine, i, toReplace);
-				}
-				else
-				{
-					perror("*** Error - Activating a variable that does not exist\n");
-					freeCmdLines(pCmdLine);
-					exit(1);
-				}
-			}
-		}
-
+		replaceCmdlineVars(pCmdLine);
 		addProcess(&global_processes, pCmdLine, pid);
 
 		if (pid == 0)
@@ -415,7 +489,7 @@ void execute(cmdLine *pCmdLine)
 
 				if (dup(input) == -1)
 				{
-					perror("*** Error - fork failed, errno: ");
+					perror("*** Error - dup stdin failed, errno: ");
 					fprintf(stderr, "%d\n", errno);
 					freeCmdLines(pCmdLine);
 					_exit(errno);
@@ -429,7 +503,7 @@ void execute(cmdLine *pCmdLine)
 
 				if (dup(output) == -1)
 				{
-					perror("*** Error - fork failed, errno: ");
+					perror("*** Error - dup stdout failed, errno: ");
 					fprintf(stderr, "%d\n", errno);
 					freeCmdLines(pCmdLine);
 					_exit(errno);
