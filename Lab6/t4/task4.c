@@ -242,10 +242,8 @@ void replaceCmdlineVars(cmdLine *pCmdLine)
 }
 
 void startPiping(cmdLine *pCmdLine)
-{
-	printf("starting to pipe\n");
-	
-	int tube[2], exec_Code;
+{	
+	int tube[2];
 	pipe(tube);
 	int child1 = fork();
 
@@ -260,32 +258,31 @@ void startPiping(cmdLine *pCmdLine)
 		exit(errno);
 	}
 
-	replaceCmdlineVars(pCmdLine);
-	addProcess(&global_processes, pCmdLine, child1);
+    addProcess(&global_processes, pCmdLine, child1);
+    replaceCmdlineVars(pCmdLine);
 
 	if (child1 == 0)
 	{
-		int input = -1;
+        // if (pCmdLine->inputRedirect != NULL)
+        // {
+        //     printf("input redirecttTTT\n");
 
-		close(STDOUT_FILENO);
+        //     int input = open(pCmdLine->inputRedirect, O_RDONLY);
+        //     close(STDIN_FILENO);
+        //     if (dup(input) == -1)
+        //     {
+        //         perror("*** Error - dup stdin failed, errno: ");
+        //         fprintf(stderr, "%d\n", errno);
+        //         freeCmdLines(pCmdLine);
+        //         _exit(errno);
+        //     }
+        // }
+
+        close(STDOUT_FILENO);
 		dup(tube[1]);
-		close(tube[1]);
+		close(tube[1]);		
 
-		if (pCmdLine->inputRedirect != NULL)
-		{
-			input = open(pCmdLine->inputRedirect, O_RDONLY);
-			close(STDIN_FILENO);
-
-			if (dup(input) == -1)
-			{
-				perror("*** Error - dup stdin failed, errno: ");
-				fprintf(stderr, "%d\n", errno);
-				freeCmdLines(pCmdLine);
-				_exit(errno);
-			}
-		}
-
-		if ((exec_Code = execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0))
+		if (execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0)
 		{
 			perror("*** Error - execvp failed, errno: ");
 			fprintf(stderr, "%d\n", errno);
@@ -310,39 +307,40 @@ void startPiping(cmdLine *pCmdLine)
 		exit(errno);
 	}
 
-	replaceCmdlineVars(secondCmdLine);
-	addProcess(&global_processes, secondCmdLine, child2);
+    addProcess(&global_processes, secondCmdLine, child2);
+    replaceCmdlineVars(secondCmdLine);
 
 	if (child2 == 0)
-	{
-		int output = -1;
-		close(STDIN_FILENO);
-		dup(tube[0]);
-		close(tube[0]);
+    {
+        close(STDIN_FILENO);
+        dup(tube[0]);
+        close(tube[0]);
 
-		if (pCmdLine->outputRedirect != NULL)
-		{
-			output = open(pCmdLine->outputRedirect, O_CREAT | O_WRONLY, S_IRWXU);
-			close(STDOUT_FILENO);
+        // if (secondCmdLine->outputRedirect != NULL)
+        // {
+        //     printf("output redirecttTTT, output: %s\n", secondCmdLine->outputRedirect);
 
-			if (dup(output) == -1)
-			{
-				perror("*** Error - dup stdout failed, errno: ");
-				fprintf(stderr, "%d\n", errno);
-				freeCmdLines(pCmdLine);
-				_exit(errno);
-			}
-		}
+        //     int output = open(secondCmdLine->outputRedirect, O_CREAT | O_WRONLY | S_IRWXU);
+        //     printf("output descriptor: %d", output);
+        //     close(STDOUT_FILENO);
+        //     if (dup(output) == -1)
+        //     {
+        //         perror("*** Error - dup stdout failed, errno: ");
+        //         fprintf(stderr, "%d, desc: %d\n", errno, output);
+        //         freeCmdLines(pCmdLine);
+        //         _exit(errno);
+        //     }
+        // }
 
-		if ((exec_Code = execvp(secondCmdLine->arguments[0], secondCmdLine->arguments) < 0))
+		if (execvp(secondCmdLine->arguments[0], secondCmdLine->arguments) < 0)
 		{
 			perror("*** Error - execvp failed, errno: ");
 			fprintf(stderr, "%d\n", errno);
 			freeCmdLines(secondCmdLine);
 			_exit(errno);
 		}
-	}
-	close(tube[0]);
+    }
+    close(tube[0]);
 	waitpid(child1, NULL, 0);
 	waitpid(child2, NULL, 0);
 }
@@ -462,7 +460,7 @@ void execute(cmdLine *pCmdLine)
 	}
 	else
 	{
-		int pid = fork(), exec_Code;
+		int pid = fork();
 
 		if (debug == 1)
 			fprintf(stderr, "Command: fork without pipes, Pid: %d\n", pid);
@@ -513,7 +511,7 @@ void execute(cmdLine *pCmdLine)
 			if (debug == 1)
 				fprintf(stderr, "Command: execvp\n");
 
-			if ((exec_Code = execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0))
+			if (execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0)
 			{
 				perror("*** Error - execvp failed, errno: ");
 				fprintf(stderr, "%d\n", errno);
