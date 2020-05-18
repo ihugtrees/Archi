@@ -34,8 +34,8 @@ typedef struct var
     struct var *next;
 } var;
 
-process *global_processes;
-var *global_vars;
+process *global_processes = NULL;
+var *global_vars = NULL;
 
 void addVar(var **vars, char *x, char *y)
 {
@@ -50,6 +50,7 @@ void addVar(var **vars, char *x, char *y)
             exist = 1;
             break;
         }
+        curr = curr->next;
     }
     if (exist == 0)
     {
@@ -61,14 +62,30 @@ void addVar(var **vars, char *x, char *y)
     }
 }
 
-void printVars(var *vars)
+void printVars(var **vars)
 {
-    var *curr = vars;
-    while(curr != NULL)
+    var *curr = *vars;
+    while (curr != NULL)
     {
-        printf("x: %s, y: %s", curr->x, curr->y);
+        printf("x: %s, y: %s\n", curr->x, curr->y);
         curr = curr->next;
     }
+}
+
+char *getVarValue(var *vars, char *x)
+{
+    char *value = NULL;
+    var *curr = vars;
+    while (curr != NULL)
+    {
+        if (strcmp(curr->x, x) == 0)
+        {
+            value = curr->y;
+            break;
+        }
+        curr = curr->next;
+    }
+    return value;
 }
 
 void addProcess(process **process_list, cmdLine *cmd, pid_t pid)
@@ -222,6 +239,19 @@ void execute(cmdLine *pCmdLine)
         if (debug == 1)
             fprintf(stderr, "Command: cd\n");
 
+        if (pCmdLine->arguments[1][0] == '~')
+        {
+            char *homePath = getenv("HOME");
+            if (homePath != NULL)
+                replaceCmdArg(pCmdLine, 1, homePath);
+            else
+            {
+                perror("*** Error - getenv = home \n");
+                freeCmdLines(pCmdLine);
+                exit(1);
+            }
+        }
+
         if (chdir(pCmdLine->arguments[1]) < 0)
         {
             perror("*** Error - chdir failed, errno: ");
@@ -292,7 +322,13 @@ void execute(cmdLine *pCmdLine)
         if (debug == 1)
             fprintf(stderr, "Command: set\n");
 
-        addVar(&global_vars, pCmdLine->arguments[1], pCmdLine->arguments[2]);
+        char *x = (char *)malloc(strlen(pCmdLine->arguments[1]) + 1);
+        char *y = (char *)malloc(strlen(pCmdLine->arguments[2]) + 1);
+
+        strcpy(x, pCmdLine->arguments[1]);
+        strcpy(y, pCmdLine->arguments[2]);
+
+        addVar(&global_vars, x, y);
         freeCmdLines(pCmdLine);
     }
     else if (strcmp(pCmdLine->arguments[0], "vars") == 0)
@@ -300,7 +336,7 @@ void execute(cmdLine *pCmdLine)
         if (debug == 1)
             fprintf(stderr, "Command: vars\n");
 
-        printVars(global_vars);
+        printVars(&global_vars);
         freeCmdLines(pCmdLine);
     }
     else
@@ -316,6 +352,24 @@ void execute(cmdLine *pCmdLine)
             fprintf(stderr, "%d\n", errno);
             freeCmdLines(pCmdLine);
             exit(errno);
+        }
+
+        for (size_t i = 0; i < pCmdLine->argCount; i++)
+        {
+            if (pCmdLine->arguments[i][0] == '$')
+            {
+                char *toReplace = getVarValue(global_vars, &pCmdLine->arguments[i][1]);
+                if (toReplace != NULL)
+                {
+                    replaceCmdArg(pCmdLine, i, toReplace);
+                }
+                else
+                {
+                    perror("*** Error - Activating a variable that does not exist\n");
+                    freeCmdLines(pCmdLine);
+                    exit(1);
+                }
+            }
         }
 
         addProcess(&global_processes, pCmdLine, pid);
@@ -376,7 +430,6 @@ void execute(cmdLine *pCmdLine)
                 exit(errno);
             }
         }
-        //freeCmdLines(pCmdLine);
     }
 }
 
