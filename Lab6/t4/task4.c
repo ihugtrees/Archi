@@ -21,9 +21,9 @@ int debug = 0;
 
 typedef struct process
 {
-	cmdLine *cmd;         /* the parsed command line*/
-	pid_t pid;            /* the process id that is running the command*/
-	int status;           /* status of the process: RUNNING/SUSPENDED/TERMINATED */
+	cmdLine *cmd;		  /* the parsed command line*/
+	pid_t pid;			  /* the process id that is running the command*/
+	int status;			  /* status of the process: RUNNING/SUSPENDED/TERMINATED */
 	struct process *next; /* next process in chain */
 } process;
 
@@ -328,6 +328,46 @@ void execute(cmdLine *pCmdLine)
 
 		printVars(&global_vars);
 		freeCmdLines(pCmdLine);
+	}
+	else if (pCmdLine->next != NULL)
+	{
+		int tube[2], exec_Code;
+		pipe(tube);
+		int child1 = fork();
+		if (child1 == 0)
+		{
+			close(STDOUT_FILENO);
+			dup(tube[1]);
+			close(tube[1]);
+			if ((exec_Code = execvp(pCmdLine->arguments[0], pCmdLine->arguments) < 0))
+			{
+				perror("*** Error - execvp failed, errno: ");
+				fprintf(stderr, "%d\n", errno);
+				freeCmdLines(pCmdLine);
+				_exit(errno);
+			}
+		}
+		close(tube[1]);
+
+		cmdLine *secondCmdLine = pCmdLine->next;
+
+		int child2 = fork();
+		if (child2 == 0)
+		{
+			close(STDIN_FILENO);
+			dup(tube[0]);
+			close(tube[0]);
+			if ((exec_Code = execvp(secondCmdLine->arguments[0], secondCmdLine->arguments) < 0))
+			{
+				perror("*** Error - execvp failed, errno: ");
+				fprintf(stderr, "%d\n", errno);
+				freeCmdLines(secondCmdLine);
+				_exit(errno);
+			}
+		}
+		close(tube[0]);
+		waitpid(child1, NULL, 0);
+		waitpid(child2, NULL, 0);
 	}
 	else
 	{
