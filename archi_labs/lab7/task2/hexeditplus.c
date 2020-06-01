@@ -79,7 +79,7 @@ void memory_display(state * s){
         tmp += s->unit_size;
     }
 }
-void fileModify(state* s){
+void file_modify(state* s){
      fprintf(stdout,"Please enter <location> <val>\n");
     char buf[128];
     int location;
@@ -93,7 +93,7 @@ void fileModify(state* s){
     fwrite(&val,s->unit_size,1,file);
     fclose(file);
 }
-void saveIntoFile(state* s){
+void save_into_file(state* s){
     fprintf(stdout,"Please enter <source-address> <target-location> <length>\n");
     char buf[128];
     int source;
@@ -133,7 +133,7 @@ int main(int argc, char **argv){
     char input [MAX_LEN];
     state * s=malloc (sizeof(state));
     s->unit_size = 1;
-    struct menu menu[] = { { "Toggle Debug Mode",toggle_debug_mode}, { "Set File Name",set_file_name}, { "Set Unit Size",set_unit_size},{"Load Into Memory",load_into_memory},{"Memory Display",memory_display},{"Save Into File",saveIntoFile},{"File Modify",fileModify},{ "Quit", quit}, {NULL,NULL} };
+    struct menu menu[] = { { "Toggle Debug Mode",toggle_debug_mode}, { "Set File Name",set_file_name}, { "Set Unit Size",set_unit_size},{"Load Into Memory",load_into_memory},{"Memory Display",memory_display},{"Save Into File",save_into_file},{"File Modify",file_modify},{ "Quit", quit}, {NULL,NULL} };
     while(1){
         int i=0;
         printState(s);

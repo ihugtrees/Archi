@@ -47,9 +47,9 @@ void set_file_name(state *s)
 
 void set_unit_size(state *s)
 {
-    printf("New unite size:\n");
+    printf("New unit size:\n");
     fgets(user_input, 128, stdin);
-    int unit_size = strtol(NULL, user_input, 10);
+    int unit_size = strtol(user_input, NULL, 10);
     if (unit_size == 1 || unit_size == 2 || unit_size == 4)
     {
         s->unit_size = unit_size;
@@ -86,47 +86,72 @@ void toggle_display_mode(state *s)
     }
 }
 
-void printState(state *s)
+void load_into_memory(state *s)
 {
-    printf("unit_size: %d \nfile_name: %s mem_count: %d\n", s->unit_size, s->file_name, s->mem_count);
-}
+    int location, length;
+    if (strcmp(s->file_name, "") == 0)
+    {
+        fprintf(stderr, "File name can't be empty\n");
+        return;
+    }
+    FILE *file = fopen(s->file_name, "r+");
+    if (file == NULL)
+    {
+        fprintf(stderr, "file don't exist\n");
+        return;
+    }
 
-char *unit_to_format(int unit)
-{
-    static char *formats[] = {"%hhd\t%hhX\n", "%hd\t%hX\n", "No such unit", "%d\t%X\n"};
-    return formats[unit - 1];
+    printf("Please enter <location> <length>\n");
+    fgets(user_input, 128, stdin);
+    sscanf(user_input, "%x %d", &location, &length);
+
+    if (s->debug_mode == 1)
+    {
+        printf("file_name: %s, location: %x, length: %d\n", s->file_name, location, length);
+    }
+
+    fseek(file, location, SEEK_SET);
+    fread(s->mem_buf, s->unit_size, length, file);
+    s->mem_count = length;
+    printf("Loaded %d units into memory\n", length);
+    fclose(file);
 }
 
 void memory_display(state *s)
 {
-    char *tmp = (char *)s->mem_buf;
-    char *end = tmp + s->unit_size * s->mem_count;
+    int location, length, value;
     printf("Enter address and length\n");
-    while (tmp < end)
+    fgets(user_input, 128, stdin);
+    sscanf(user_input, "%x %d", &location, &length);
+
+    char *start = (char *)s->mem_buf + location;
+    //char *end = start + s->unit_size * s->mem_count;
+    static char *dec_format[] = {"%hhd\n", "%hd\n", "", "%d\n"};
+    static char *hex_format[] = {"%hhX\n", "%hX\n", "", "%X\n"};
+
+    if (s->display_mode == 0)
     {
-        int var = *((int *)(tmp));
-        fprintf(stdout, unit_to_format(s->unit_size), var, var);
-        tmp += s->unit_size;
+        printf("Decimal\n=======\n");
+        for (size_t i = 0; i < length; i++)
+        {
+            value = *((int *)(start));
+            printf(dec_format[s->unit_size - 1], value);
+            start += s->unit_size;
+        }
+    }
+    else
+    {
+        printf("Hexadecimal\n=======\n");
+        for (size_t i = 0; i < length; i++)
+        {
+            value = *((int *)(start));
+            printf(hex_format[s->unit_size - 1], value);
+            start += s->unit_size;
+        }
     }
 }
 
-void fileModify(state *s)
-{
-    fprintf(stdout, "Please enter <location> <val>\n");
-    char buf[128];
-    int location;
-    int val;
-
-    fgets(buf, 128, stdin);
-    sscanf(buf, "%x %x", &location, &val);
-    FILE *file = fopen(s->file_name, "r+");
-    fseek(file, location, SEEK_SET);
-
-    fwrite(&val, s->unit_size, 1, file);
-    fclose(file);
-}
-
-void saveIntoFile(state *s)
+void save_into_file(state *s)
 {
     fprintf(stdout, "Please enter <source-address> <target-location> <length>\n");
     char buf[128];
@@ -147,35 +172,19 @@ void saveIntoFile(state *s)
     fclose(file);
 }
 
-void load_into_memory(state *s)
+void file_modify(state *s)
 {
+    fprintf(stdout, "Please enter <location> <val>\n");
+    char buf[128];
     int location;
-    int length;
-    if (strcmp(s->file_name, ""))
-    {
-        fprintf(stderr, "File name can't be empty\n");
-        return;
-    }
+    int val;
+
+    fgets(buf, 128, stdin);
+    sscanf(buf, "%x %x", &location, &val);
     FILE *file = fopen(s->file_name, "r+");
-    if (file == NULL)
-    {
-        fprintf(stderr, "file don't exist\n");
-        return;
-    }
-
-    printf("Please enter <location> <length>\n");
-    fgets(user_input, 128, stdin);
-    sscanf(user_input, "%x %d", &location, &length);
-
-    if (s->debug_mode == 1)
-    {
-        printf("file_name: %s, location: %x, length: %d");
-    }
-
     fseek(file, location, SEEK_SET);
-    fread(s->mem_buf, s->unit_size, length, file);
-    s->mem_count = length;
-    printf("Loaded %d units into memory", length);
+
+    fwrite(&val, s->unit_size, 1, file);
     fclose(file);
 }
 
@@ -187,28 +196,28 @@ int main(int argc, char **argv)
                           {"Load Into Memory", load_into_memory},
                           {"Toggle Display Mode", toggle_display_mode},
                           {"Memory Display", memory_display},
-                          {"Save Into File", saveIntoFile},
-                          {"File Modify", fileModify},
+                          {"Save Into File", save_into_file},
+                          {"File Modify", file_modify},
                           {"Quit", quit},
                           {NULL, NULL}};
     int menuLen = sizeof(menu) / sizeof(menu[0]) - 1;
     state *stat = malloc(sizeof(state));
     stat->unit_size = 1;
     stat->display_mode = 0;
+    stat->debug_mode = '0';
 
     while (1)
     {
-        printState(stat);
+        //printState(stat);
 
         for (int i = 0; i < menuLen; i++)
             printf("%d-%s\n", i, menu[i].name);
 
         printf("Option: ");
         fgets(user_input, MAX_LEN, stdin);
-        int user_choise = strtol(NULL, user_input, 10);
+        int user_choise = strtol(user_input, NULL, 10);
         if (user_choise >= 0 && user_choise < menuLen)
         {
-            printf("Within bounds\n");
             menu[user_choise].fun(stat);
         }
     }
