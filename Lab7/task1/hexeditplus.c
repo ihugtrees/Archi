@@ -125,7 +125,6 @@ void memory_display(state *s)
     sscanf(user_input, "%x %d", &location, &length);
 
     char *start = (char *)s->mem_buf + location;
-    //char *end = start + s->unit_size * s->mem_count;
     static char *dec_format[] = {"%hhd\n", "%hd\n", "", "%d\n"};
     static char *hex_format[] = {"%hhX\n", "%hX\n", "", "%X\n"};
 
@@ -153,22 +152,27 @@ void memory_display(state *s)
 
 void save_into_file(state *s)
 {
-    fprintf(stdout, "Please enter <source-address> <target-location> <length>\n");
-    char buf[128];
+    printf("Please enter <source-address> <target-location> <length>\n");
     int source;
     int target;
     int length;
 
-    fgets(buf, 128, stdin);
-    sscanf(buf, "%x %x %d", &source, &target, &length);
+    fgets(user_input, 128, stdin);
+    sscanf(user_input, "%x %x %d", &source, &target, &length);
     FILE *file = fopen(s->file_name, "r+");
-    if (source == 0)
+    if (file == NULL)
     {
-        source = (int)s->mem_buf;
+        fprintf(stderr, "error opening file\n");
     }
+    // if (source == 0)
+    // {
+    //     source = (int)s->mem_buf;
+    // }
+    char *start = (char *)s->mem_buf + source;
+
     fseek(file, target, SEEK_SET);
-    unsigned char *sourcePtr = (unsigned char *)source;
-    fwrite(sourcePtr, s->unit_size, length, file);
+    //unsigned char *sourcePtr = (unsigned char *)source;
+    fwrite(start, s->unit_size, length, file);
     fclose(file);
 }
 
