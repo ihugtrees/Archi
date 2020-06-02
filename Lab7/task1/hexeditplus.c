@@ -14,6 +14,7 @@ typedef struct
     unsigned char mem_buf[10000];
     size_t mem_count;
     int display_mode;
+    int size;
 } state;
 
 struct menu
@@ -110,10 +111,14 @@ void load_into_memory(state *s)
         printf("file_name: %s, location: %x, length: %d\n", s->file_name, location, length);
     }
 
+    fseek(file, 0, SEEK_END);
+    s->size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
     fseek(file, location, SEEK_SET);
-    fread(s->mem_buf, s->unit_size, length, file);
+    int copied = fread(s->mem_buf, s->unit_size, length, file);
     s->mem_count = length;
-    printf("Loaded %d units into memory\n", length);
+    printf("Loaded %d units into memory\n", copied);
     fclose(file);
 }
 
@@ -153,43 +158,44 @@ void memory_display(state *s)
 void save_into_file(state *s)
 {
     printf("Please enter <source-address> <target-location> <length>\n");
-    int source;
-    int target;
-    int length;
+    int source, target, length;
 
     fgets(user_input, 128, stdin);
     sscanf(user_input, "%x %x %d", &source, &target, &length);
     FILE *file = fopen(s->file_name, "r+");
+
     if (file == NULL)
     {
         fprintf(stderr, "error opening file\n");
+        return;
     }
-    // if (source == 0)
-    // {
-    //     source = (int)s->mem_buf;
-    // }
+    if (s->size <= target)
+    {
+        fprintf(stderr, "target is too big\n");
+        return;
+    }
+
     char *start = (char *)s->mem_buf + source;
 
     fseek(file, target, SEEK_SET);
-    //unsigned char *sourcePtr = (unsigned char *)source;
     fwrite(start, s->unit_size, length, file);
     fclose(file);
 }
 
-void file_modify(state *s)
+void memory_modify(state *s)
 {
     fprintf(stdout, "Please enter <location> <val>\n");
-    char buf[128];
-    int location;
-    int val;
+    int location, val;
 
-    fgets(buf, 128, stdin);
-    sscanf(buf, "%x %x", &location, &val);
-    FILE *file = fopen(s->file_name, "r+");
-    fseek(file, location, SEEK_SET);
+    fgets(user_input, 128, stdin);
+    sscanf(user_input, "%x %x", &location, &val);
 
-    fwrite(&val, s->unit_size, 1, file);
-    fclose(file);
+    if(s->debug_mode == 1)
+    {
+        fprintf(stderr, "location: %x, val: %x", location, val);
+    }
+
+    char *start = (char *)s->mem_buf + location;
 }
 
 int main(int argc, char **argv)
@@ -201,7 +207,7 @@ int main(int argc, char **argv)
                           {"Toggle Display Mode", toggle_display_mode},
                           {"Memory Display", memory_display},
                           {"Save Into File", save_into_file},
-                          {"File Modify", file_modify},
+                          {"Memory Modify", memory_modify},
                           {"Quit", quit},
                           {NULL, NULL}};
     int menuLen = sizeof(menu) / sizeof(menu[0]) - 1;
