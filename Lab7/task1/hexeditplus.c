@@ -190,12 +190,44 @@ void memory_modify(state *s)
     fgets(user_input, 128, stdin);
     sscanf(user_input, "%x %x", &location, &val);
 
-    if(s->debug_mode == 1)
+    if (s->debug_mode == 1)
     {
-        fprintf(stderr, "location: %x, val: %x", location, val);
+        fprintf(stderr, "location: %x, val: %x\n", location, val);
     }
 
+    // switch (s->unit_size)
+    // {
+    // case 1:
+    //     if (val > 255)
+    //         fprintf(stderr, "val too big\n");
+    //     return;
+    // case 2:
+    //     if (val > 65535)
+    //         fprintf(stderr, "val too big\n");
+    //     return;
+    // case 4:
+    //     if (val > 4294967295)
+    //         fprintf(stderr, "val too big\n");
+    //     return;
+
+    // default:
+    //     break;
+    // }
+    
+    // printf("starting to open file");
+    // FILE *file = fopen("temp.txt", "w+");
+    // if(file == NULL)
+    // {
+    //     fprintf(stderr, "error creating file");
+    // }
+    // fprintf(file, "%d", val);
+
     char *start = (char *)s->mem_buf + location;
+    *((int *)(start)) = val;
+    
+    // fread(start, s->unit_size, 1, file);
+    // fclose(file);
+    //remove("test");
 }
 
 int main(int argc, char **argv)
@@ -210,6 +242,7 @@ int main(int argc, char **argv)
                           {"Memory Modify", memory_modify},
                           {"Quit", quit},
                           {NULL, NULL}};
+
     int menuLen = sizeof(menu) / sizeof(menu[0]) - 1;
     state *stat = malloc(sizeof(state));
     stat->unit_size = 1;
@@ -218,8 +251,6 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        //printState(stat);
-
         for (int i = 0; i < menuLen; i++)
             printf("%d-%s\n", i, menu[i].name);
 
