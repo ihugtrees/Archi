@@ -13,9 +13,9 @@ int debugMode = 0;
 char fileName[MAX_LENGTH];
 
 int Currentfd = -1;
-void *map_start;     /* will point to the start of the memory mapped file */
-struct stat fd_stat; /* this is needed to  the size of the file */
-Elf32_Ehdr *header;  /* this will point to the header structure */
+void *map_start;
+struct stat fd_stat;
+Elf32_Ehdr *header;
 
 struct fun_desc
 {
