@@ -265,12 +265,12 @@ initDronesArray:
 	je endDroneInit
 	mov ebx, dword [dronesArray]                ; The array
 
-	push drone_struct_len                       ; size of struct for each drone
 	pushad
+	push drone_struct_len                       ; size of struct for each drone
 	call malloc
 	mov dword [ebx + esi], eax                  ; set pointer to the new allocated space
-	popad
 	add esp, 4
+	popad
 
 	initRandomDroneValues:
 	xor edx, edx
@@ -303,7 +303,7 @@ initDronesArray:
 	fstp qword [ebx + speedPlace]               ; put it at the place ebx point at
 
 	mov dword [ebx + targetsPlace], 0           ; put targets destroyed to be 0
-	mov dword [ebx + destroyed], 0           ; put destroyed to 0
+	mov dword [ebx + destroyed], 0              ; put destroyed to 0
 
 	add esi, dword 4
 	dec ecx
@@ -502,6 +502,9 @@ freeMemoryBeforeExit:
 endAss3:
 
 section .data
+    N: dd 0
+    R: dd 0
+    K: dd 0
 	format_string_s: db "%s",0
 	format_string: db "%d",10,0
 	down: db '',10,0
@@ -517,11 +520,13 @@ section .data
 	drone_struct_len equ 40
 	degree equ 360
 	distance equ 100
+    ;d: dt 0
+    ;seed: dd 0
 
 section .bss
-	N: resd 1                          ; Number of drones
-	R: resd 1                          ; Number of targets to destroy to win the game
-	K: resd 1                          ; How many drone steps between game board printings
+	;N: resd 1                          ; Number of drones
+	;R: resd 1                          ; Number of targets to destroy to win the game
+	;K: resd 1                          ; How many drone steps between game board printings
 	d: rest 1                          ; Maximum distance that allows to destroy a target
 	seed: resd 1                       ; Seed for initialization of LFSR shift register
 	CORS: resd 1                       ; Number of all the co-routines in the program

@@ -57,9 +57,7 @@ section .text                           ; functions from c libary
 	extern random_number
 	extern target
 	extern CORS
-	extern res
 	extern resume
-	extern CURR
 	extern endCo
 	extern schedulerCo
 	extern scheduler
@@ -200,13 +198,8 @@ mayDestroy:
 	fld qword [dis_tar_dro]
 	fcomip              ; check if distance to target < d
 	ja resumeSchedular
-	; fld qword [beta_input]
-	; fld qword [gamma]
 
-	; fcomip
-	; jae resumeSchedular     ; TODO make resume scheduler
-	call distroyTarget
-	jmp resumeSchedular
+	jmp distroyTarget
 
 	calc_distance:
 		startFunction
@@ -276,7 +269,7 @@ mayDestroy:
 	; 	jmp cont_calc_deg
 
 	distroyTarget:
-		startFunction
+		;startFunction
 		ffree
 		xor eax, eax
 		mov eax, dword [CURR]
@@ -288,24 +281,14 @@ mayDestroy:
 
 		inc byte [ebx + 32]
 
-		; mov [ebx + 24], esi
-		; cmp esi, dword [ebx + 24]
-		; je printwinner
-
 		mov eax, [CORS]
 		mov ecx, dword [targetCo]
 		add eax, ecx
 		mov ebx, [eax]
 		ffree
 		call resume
-		endFunction
-
-; printwinner:
-; 	shr eax, 2
-; 	inc eax
-; 	printwinn eax
-; 	ffree
-; 	call endCo
+        ;endFunction
+	    jmp drone
 
 resumeSchedular:
 	xor ebx, ebx

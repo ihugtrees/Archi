@@ -33,9 +33,11 @@ target:
 	generate_num edx,distance
 	fld qword [res]
 	fstp qword [yt]
+
 	xor ebx,ebx
 	xor eax,eax
 	xor esi,esi
+    
 	mov eax,[CORS]
 	mov esi,dword [schedulerCo]
 	add eax,esi

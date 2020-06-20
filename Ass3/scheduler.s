@@ -33,7 +33,8 @@ section .text                           ; functions from c libary
 
 scheduler:
 	xor esi, esi ; drone offset
-	xor eax, eax ; drone address
+    mov eax, dword [N]
+    mov dword [alive], eax
 
 	schedulerLoop:
 		mov eax, [N]
@@ -43,11 +44,11 @@ scheduler:
 		jmp next
 
 	roundComplete: ; finished whole round
-	  xor esi, esi
-	  inc byte [rounds]
-	  mov edx, [rounds]
-	  cmp edx, [R]
-	  je checkIfGameOver
+        xor esi, esi
+        inc byte [rounds]
+        mov edx, [rounds]
+        cmp edx, [R]
+        je checkIfGameOver
 
 	next:
 		mov eax, [CORS]
@@ -61,7 +62,6 @@ scheduler:
 		mov ecx, dword [ecx + 36] ; dead flag
 		cmp ecx, 1 		; check if dead
 		je schedulerLoop
-		inc byte [alive]
 
 		call resume
 		inc byte [droneSteps]
@@ -83,16 +83,15 @@ scheduler:
 		xor eax, eax
 		xor ecx, ecx ; counter
 		xor edx, edx 
+        mov dword [rounds], 0
 
-		mov dword [rounds], 0
-		cmp byte [alive], 1
-		je gameEnded
-		mov dword [alive], 0
+        cmp dword [alive], 1
+        je gameEnded
 		
 		mov eax, [dronesArray]
         mov eax, [eax]
 		mov edx, dword [eax + 32]
-		mov [minDestroyed], edx
+		mov dword [minDestroyed], edx
 
 		loserLoop:
 			cmp ecx, [N]
@@ -102,11 +101,13 @@ scheduler:
 			mov eax, [dronesArray] ; current drone
 			add eax, edi
             mov eax, [eax]
+            xor edx, edx
 			mov edx, dword [eax + 36] ; if dead
 			cmp edx, 1
-			je contLoop
+			jge contLoop
+            xor edx, edx
 			mov edx, dword [eax + 32] ; how many targets destroyed
-			cmp edx, [minDestroyed]
+			cmp edx, dword [minDestroyed]
 			jl loser
 
 			contLoop:
@@ -114,7 +115,7 @@ scheduler:
 			jmp loserLoop
 
 			loser:
-			mov [minDestroyed], edx
+			mov dword [minDestroyed], edx
 			jmp contLoop
 
 		endLoop:
@@ -127,9 +128,9 @@ scheduler:
                 mov eax, [eax]
 				mov edx, dword [eax + 36] ; if dead
 				cmp edx, 1
-				je contElimLoop
+				jge contElimLoop
 				mov edx, dword [eax + 32] ; how many targets destroyed
-				cmp edx, [minDestroyed]
+				cmp edx, dword [minDestroyed]
 				je dieNoob
 
 				contElimLoop:
@@ -138,7 +139,10 @@ scheduler:
 
 				dieNoob:
 				mov dword [eax + 36], 1
-				jmp next
+                sub dword [alive], 1
+                cmp dword [alive], 1
+                je gameEnded
+				jmp schedulerLoop
 
 	gameEnded:
 		xor ecx, ecx
@@ -150,14 +154,27 @@ scheduler:
             mov eax, [eax]
 			mov edx, dword [eax + 36] ; if dead
 			cmp edx, 1
-			je contWinLoop
+			jge contWinLoop
 			jmp winner
 
 			contWinLoop:
 			inc ecx
 			jmp winnerLoop
 	winner:
+        pushad
+        jmp finalPrint
+    printWinner:
+        popad
 		inc ecx
 		printwinn ecx
 		ffree
 		call endCo
+
+    finalPrint:
+		mov eax, [CORS]
+		mov ecx, dword [printerCo]
+		add eax, ecx
+		mov ebx, [eax]
+		call resume
+		mov dword [droneSteps], 0
+		jmp printWinner
