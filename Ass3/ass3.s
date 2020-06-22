@@ -1,15 +1,4 @@
  macros:
-	%macro print_float 1
-		pushad
-		fld qword %1
-		sub esp,8
-		fstp qword [esp]
-		push format_string_2f
-		call printf
-		add esp,12
-		popad
-	%endmacro
-
 	%macro allocateCo_routine 1
 		push STKSZ
 		call malloc                     ; Allocate stack size
@@ -23,21 +12,6 @@
 		mov esi, dword %1
 		mov [ebx], %1
 		mov dword [ebx + 4], eax        ; Set  cell in Cors array to point to  alocated stack
-	%endmacro
-
-	%macro allocateCo_routine_drone 2
-		push STKSZ
-		call malloc                     ; Allocate stack size
-		add esp, 4
-		mov ebx, dword [CORS]
-		add ebx, edi
-		mov ebx, [ebx]
-
-		mov dword [ebx + 12], eax
-		add eax, STKSZ 					; set in eax the address of the end of the stack
-		mov [ebx], %1
-		mov dword [ebx + 4], eax        ; Set  cell in Cors array to point to  alocated stack
-		mov dword [ebx + 8], %2
 	%endmacro
 
 	%macro callscanf 3
@@ -62,11 +36,6 @@
 		ret
 	%endmacro
 
-	%macro zero_q 1
-		mov dword [%1],0
-		mov dword [%1+4],0
-	%endmacro
-
 	%macro  generate_num 2
 		push %1
 		push %2
@@ -81,7 +50,6 @@ section .text                           ; functions from c libary
 	global R
 	global K
 	global seed
-	global beta
 	global d
 	global random_number
 	global res
@@ -430,11 +398,6 @@ random_number:
 freeMemoryBeforeExit:
 	xor eax, eax
 	xor ecx, ecx
-	;mov ebx, dword [CORS]
-	;xor esi, esi
-	;mov ecx, [N]
-	;add ecx, dword 3
-	;xor ecx, ecx
 
 	freeStackLoop:
 		mov eax, [N]
@@ -456,7 +419,6 @@ freeMemoryBeforeExit:
 
 	fin_freeStack:
 		xor ecx, ecx
-		;xor esi, esi
 		mov ecx, [N]
 		add ecx, dword 3
 		mov eax, dword [CORS]
@@ -471,9 +433,6 @@ freeMemoryBeforeExit:
 			add eax, dword 4
 		loop freeStructLoop, ecx
 
-		; xor ecx, ecx
-		; mov ecx, [N]
-		; mov eax, dword [dronesArray]
 		xor eax,eax
 		xor ecx, ecx
 		freeDronesArrayLoop:
@@ -505,23 +464,14 @@ section .data
     N: dd 0
     R: dd 0
     K: dd 0
-	format_string_s: db "%s",0
-	format_string: db "%d",10,0
-	down: db '',10,0
 	format_string_int: db "%d", 10, 0   ; format string int
 	format_string_float: db "%f", 10, 0 ; format string float
-	format_string_floatl: db "%1f", 10, 0 ; format string float
-	format_string_2f: db "%.2f",10,0 ; float 2 numbers after dot
-	beta: db 180                       ; Angle of drone field-of-view
 	maxint: dd 65536
-	bignum: DD 0
 	res: dd 0
 	struct_len equ 16
 	drone_struct_len equ 40
 	degree equ 360
 	distance equ 100
-    ;d: dt 0
-    ;seed: dd 0
 
 section .bss
 	;N: resd 1                          ; Number of drones
@@ -536,7 +486,6 @@ section .bss
 	printerCo: resd 1                  ; Pointer to printer co-routine
 	xValue: resq 1
 	yValue: resq 1
-	alphValue: resq 1
 
 	struc drone_struc
 		xPlace: resq 1

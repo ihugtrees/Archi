@@ -10,15 +10,6 @@ macros:
 		ret
 	%endmacro
 
-	%macro printwinn 1
-		pushad
-		push %1
-		push printwin
-		call printf
-		add esp,8
-		popad
-	%endmacro
-
 	%macro generate_num 2
 		push %1
 		push %2
@@ -31,21 +22,12 @@ macros:
 		mov dword [%1+4],0
 	%endmacro
 
-	%macro print_float 1
-		fld qword [%1]
-		sub esp,8
-		fstp qword [esp]
-		push format_string_2f
-		call printf
-		add esp,12
-	%endmacro
-
 section .text                           ; functions from c libary
 	align 16
 	global drone:function
 	global speed
 	extern N
-	extern beta
+	;extern beta
 	extern d
 	extern ass3
 	extern res
@@ -91,7 +73,6 @@ drone:
 		pushad
 		generate_num deg2,deg1          ; generate alpha -60 to 60
 		popad
-		;print_float res
 		fld qword [res]
 		fld qword [alpha]               ; drone old degree
 		faddp
@@ -182,8 +163,6 @@ mayDestroy:
 	fstp qword [ebx + 8]
 	fld dword [d]
 	fstp qword [distance_input]
-	; fld dword [beta]
-	; fstp qword [beta_input]
 	fld qword [xt]
 	fld qword [x1]
 	fsub
@@ -192,7 +171,6 @@ mayDestroy:
 	fld qword [y1]
 	fsub
 	fstp qword [ymd]
-	;call calc_deg
 	call calc_distance
 	fld qword [distance_input]
 	fld qword [dis_tar_dro]
@@ -219,57 +197,7 @@ mayDestroy:
 		pop ebp
 		ret
 
-	; calc_deg:
-	; 	startFunction
-	; 	ffree
-	; 	fld qword [ymd]
-	; 	fld  qword [xmd]
-	; 	fpatan
-	; 	fstp qword [gamma]
-	; 	fld qword [gamma]
-	; 	fld qword [pi]
-	; 	fmul
-	; 	fstp qword [gamma]
-	; 	fld qword [alpha]
-	; 	fld qword [gamma]
-	; 	fsub
-	; 	fild dword [halffeg]
-	; 	fcomip
-	; 	jb add2pi
-
-	; 	cont_calc_deg:
-	; 	fld qword [alpha]
-	; 	fld qword [gamma]
-	; 	fsub
-	; 	fabs
-	; 	fstp qword [gamma]
-	; 	endFunction
-	; 	fcomip
-	; 	ja add2pi
-	; 	ffree
-	; 	pop ebp
-	; 	ret
-
-	; 	add2pi:
-	; 	fld qword [alpha]
-	; 	fld qword [gamma]
-	; 	fcomip
-	; 	jb fixsmaller
-	; 		fild dword [max_deg]
-	; 	fld qword [alpha]
-	; 	fadd
-	; 	fstp qword [alpha]
-	; 	jmp cont_calc_deg
-
-	; 	fixsmaller:
-	; 	fild dword [max_deg]
-	; 	fld qword [gamma]
-	; 	fadd
-	; 	fstp qword [gamma]
-	; 	jmp cont_calc_deg
-
 	distroyTarget:
-		;startFunction
 		ffree
 		xor eax, eax
 		mov eax, dword [CURR]
@@ -278,16 +206,13 @@ mayDestroy:
 		xor ebx, ebx
 		mov ebx, dword [dronesArray]
 		mov ebx, [ebx + eax]
-
 		inc byte [ebx + 32]
-
 		mov eax, [CORS]
 		mov ecx, dword [targetCo]
 		add eax, ecx
 		mov ebx, [eax]
 		ffree
 		call resume
-        ;endFunction
 	    jmp drone
 
 resumeSchedular:
@@ -312,7 +237,6 @@ section .data
 	halffeg: dd 180
 	max_dis: dd 100
 	max_deg: dd 360
-	beta_input: dq 0
 	distance_input: dq 0
 	rad: dq 0.0174532925199433
 	pi: dq 57.2957795130823209
@@ -330,7 +254,3 @@ section .data
 	alpha: dq 0
 	gamma: dq 0
 	speed: dq 0
-
-	format_string_2f: db "%.2f",10,0 ; float 2 numbers after dot
-	format_string: db "%d",10,0
-	printwin: db "Drone id %d: I am a winner",10,0

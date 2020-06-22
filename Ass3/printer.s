@@ -1,6 +1,8 @@
 section .data
 	targetCordinatesStr: db "x: %.2f, y: %.2f", 10, 0 ; float 2 numbers after dot
 	droneDetailsStr: db "[%d] x: %.2f, y: %.2f, a: %.2f, spd: %.2f, kills: %d, dead: %d", 10, 0   ; format string int
+	targetStr: db "%.2f,%.2f", 10, 0
+	droneStr: db "%d,%.2f,%.2f,%.2f,%.2f,%d", 10, 0
 
 section .text                           ; functions from c libary
 	align 16
@@ -43,17 +45,17 @@ printer:
 		mov edi, dword [eax]
 		inc esi
 		pushad
-        push dword [edi + 36]
+		push dword [edi + 36]
 		push dword [edi + 32]
    		fld qword [edi  + 24]
 		fld qword [edi + 16]
 		fld qword [edi + 8]
 		fld qword [edi]
-        sub esp, 32
+		sub esp, 32
 		fstp qword [esp]
 		fstp qword [esp + 8]
 		fstp qword [esp + 16]
-    	fstp qword [esp + 24]
+		fstp qword [esp + 24]
 		push esi
 		push droneDetailsStr
 		call printf

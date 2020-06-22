@@ -11,7 +11,7 @@ section .data
 	SPP equ 4 							; offset of pointer to co-routine stack in co-routine struct
 	rounds: dd 0
 	droneSteps: dd 0
-	minDestroyed: dd 0
+	minDestroyed: dd 65535
 	alive: dd 0
 	printwin: db "The winner is drone: %d", 10, 0
 
@@ -87,11 +87,8 @@ scheduler:
 
         cmp dword [alive], 1
         je gameEnded
-		
-		mov eax, [dronesArray]
-        mov eax, [eax]
-		mov edx, dword [eax + 32]
-		mov dword [minDestroyed], edx
+				
+		mov dword [minDestroyed], 65535
 
 		loserLoop:
 			cmp ecx, [N]
